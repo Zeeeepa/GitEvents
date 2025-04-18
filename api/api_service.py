@@ -5,7 +5,7 @@ import os
 import logging
 from pydantic import BaseModel
 
-from db_manager import DatabaseManager
+from db.db_manager import DatabaseManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -127,7 +127,7 @@ async def get_repo_prs(repo_id: int, limit: int = Query(10, ge=1, le=100)):
     """Get pull requests for a specific repository"""
     try:
         with db_manager.get_session() as session:
-            from db_schema import PullRequest, Repository, User
+            from db.db_schema import PullRequest, Repository, User
             
             query = (
                 session.query(PullRequest)
@@ -166,7 +166,7 @@ async def get_pr_history(pr_id: int, limit: int = Query(100, ge=1, le=500)):
     """Get event history for a specific pull request"""
     try:
         with db_manager.get_session() as session:
-            from db_schema import PREvent
+            from db.db_schema import PREvent
             
             query = (
                 session.query(PREvent)
@@ -198,7 +198,7 @@ async def get_repositories():
     """Get all repositories"""
     try:
         with db_manager.get_session() as session:
-            from db_schema import Repository
+            from db.db_schema import Repository
             
             repos = session.query(Repository).all()
             
@@ -217,6 +217,34 @@ async def get_repositories():
             return result
     except Exception as e:
         logger.error(f"Error retrieving repositories: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Settings endpoints
+@app.get("/api/settings/status")
+async def get_system_status():
+    """Get the current system status and settings"""
+    try:
+        # In a real application, this would fetch from a settings database
+        # For now, we'll return mock data
+        return {
+            "notifications": {"enabled": True},
+            "auto_pr": {"enabled": False, "running": False},
+            "post_merge_scripts": {"enabled": True}
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving system status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/settings/update")
+async def update_system_settings(settings: Dict[str, Any]):
+    """Update system settings"""
+    try:
+        # In a real application, this would update a settings database
+        # For now, we'll just log the request
+        logger.info(f"Updating system settings: {settings}")
+        return {"success": True, "message": "Settings updated successfully"}
+    except Exception as e:
+        logger.error(f"Error updating system settings: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

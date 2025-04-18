@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import SQLAlchemyError
 
-from db_schema import Base, Repository, User, PullRequest, PREvent, BranchEvent, PushEvent
+from db.db_schema import Base, Repository, User, PullRequest, PREvent, BranchEvent, PushEvent
 
 logger = logging.getLogger(__name__)
 
