@@ -4,17 +4,23 @@ GitEvents is a comprehensive dashboard for monitoring GitHub events in real-time
 
 ## Features
 
-- **Real-time Event Monitoring**: Track GitHub events as they happen
-- **Repository Management**: View and manage repositories
+- **Event Tracking**: Monitor GitHub events in real-time
+- **Repository Insights**: View repository activity and statistics
+- **User Activity**: Track user contributions and activity
 - **Pull Request Tracking**: Monitor pull requests and their status
 - **Customizable Settings**: Configure notifications and automation
 - **System Configuration**: Set up GitHub integration and webhooks
+- **Webhook Support**: Receive and process GitHub webhook events
+- **Docker Support**: Easy deployment with Docker and Docker Compose
+- **Ngrok Integration**: Expose local webhook endpoints to the internet
 
 ## Tech Stack
 
 - **Frontend**: React with Tailwind CSS
 - **Backend**: Python with FastAPI
 - **Database**: SQLite with SQLAlchemy ORM
+- **Containerization**: Docker and Docker Compose
+- **Tunneling**: Ngrok for exposing local endpoints
 
 ## Installation
 
@@ -23,8 +29,10 @@ GitEvents is a comprehensive dashboard for monitoring GitHub events in real-time
 - Node.js (v14+)
 - Python (v3.8+)
 - Git
+- Docker and Docker Compose (optional, for containerized deployment)
+- Ngrok account (optional, for webhook tunneling)
 
-### Backend Setup
+### Environment Setup
 
 1. Clone the repository:
    ```
@@ -32,98 +40,169 @@ GitEvents is a comprehensive dashboard for monitoring GitHub events in real-time
    cd GitEvents
    ```
 
-2. Install Python dependencies:
+2. Create a `.env` file based on the example:
+   ```
+   cp .env.example .env
+   ```
+
+3. Edit the `.env` file with your GitHub token and other settings:
+   ```
+   # API Configuration
+   API_PORT=8001
+   WEBHOOK_PORT=8002
+
+   # GitHub Configuration
+   GITHUB_TOKEN=your_github_token_here
+   GITHUB_WEBHOOK_SECRET=your_webhook_secret_here
+
+   # Database Configuration
+   GITHUB_EVENTS_DB=github_events.db
+
+   # Frontend Configuration
+   REACT_APP_API_URL=http://localhost:8001/api
+   
+   # Ngrok Configuration
+   ENABLE_NGROK=false
+   NGROK_AUTH_TOKEN=your_ngrok_auth_token_here
+   ```
+
+### Standard Setup
+
+#### Backend Setup
+
+1. Install Python dependencies:
    ```
    pip install -r requirements.txt
    ```
 
-3. Set up environment variables (optional):
-   ```
-   export GITHUB_EVENTS_DB=path/to/database.db
-   export API_PORT=8001
-   ```
-
-4. Start the backend server:
+2. Start the backend server:
    ```
    python main.py
    ```
 
-### Frontend Setup
+   This will start both the API server on port 8001 and the webhook handler on port 8002.
+
+#### Frontend Setup
 
 1. Install Node.js dependencies:
    ```
    npm install
    ```
 
-2. Set up environment variables (optional):
-   Create a `.env` file in the root directory:
-   ```
-   REACT_APP_API_URL=http://localhost:8001/api
-   ```
-
-3. Start the frontend development server:
+2. Start the frontend development server:
    ```
    npm start
    ```
 
-4. Open your browser and navigate to `http://localhost:3000`
+3. Open your browser and navigate to `http://localhost:3000`
+
+### Docker Setup
+
+1. Make sure Docker and Docker Compose are installed on your system.
+
+2. Build and start the containers:
+   ```
+   docker-compose up -d
+   ```
+
+3. Open your browser and navigate to `http://localhost:3000`
+
+4. To stop the containers:
+   ```
+   docker-compose down
+   ```
+
+## Webhook Configuration
+
+To receive GitHub webhook events:
+
+1. Go to your GitHub repository settings
+2. Navigate to Webhooks > Add webhook
+3. Set the Payload URL to `http://your-server:8002/webhook/github`
+4. Set the Content type to `application/json`
+5. Set the Secret to match your `GITHUB_WEBHOOK_SECRET` environment variable
+6. Select the events you want to receive (recommended: Pull requests, Pushes, and Branch creation/deletion)
+7. Ensure the webhook is active
+
+### Using Ngrok for Webhook Development
+
+If you're developing locally and need to receive GitHub webhooks, you can use ngrok to expose your local webhook endpoint to the internet:
+
+1. Set up ngrok in your `.env` file:
+   ```
+   ENABLE_NGROK=true
+   NGROK_AUTH_TOKEN=your_ngrok_auth_token_here
+   ```
+
+2. Start the application:
+   ```
+   python main.py
+   ```
+
+3. The application will automatically start ngrok tunnels and display the public URLs for your webhook and API endpoints.
+
+4. Use the displayed webhook URL in your GitHub repository webhook settings.
 
 ## Usage
 
 ### Dashboard
 
-The main dashboard displays recent GitHub events. You can filter events by type and repository.
+View GitHub events, repository activity, and user contributions in real-time.
 
-### Repositories
+### Event Filtering
 
-The repositories section shows all connected GitHub repositories. Click on a repository to view its pull requests.
+Filter events by type, repository, user, or date range.
 
-### Settings
-
-Configure notification settings, automatic PR creation, and post-merge scripts.
-
-### Configuration
+### System Configuration
 
 Set up GitHub integration, webhook configuration, and database settings.
 
-## Development
-
-### Project Structure
+## Project Structure
 
 ```
 GitEvents/
 ├── api/                  # Backend API code
-│   ├── api_service.py    # FastAPI application
-│   └── api_service_settings.py
+│   ├── api_service.py    # FastAPI application for main API
+│   ├── api_service_settings.py
+│   ├── webhook_handler.py # Webhook handler for GitHub events
+│   └── ngrok_service.py  # Ngrok integration for exposing local endpoints
 ├── dashboard/            # Frontend React components
 │   ├── GitHubEventsDashboard.jsx
 │   ├── RecentEvents.jsx
-│   ├── RepositoryList.jsx
-│   ├── RepositoryPRs.jsx
-│   ├── SettingsPanel.jsx
-│   └── ConfigurationPanel.jsx
-├── db/                   # Database models and manager
+│   ├── RepositoryInsights.jsx
+│   └── UserActivity.jsx
+├── db/                   # Database models and managers
 │   ├── db_manager.py
-│   └── db_schema.py
+│   └── models.py
 ├── handlers/             # Event handlers
 │   └── github_event_handler.py
 ├── managers/             # Business logic managers
-│   ├── auto_branch_pr_manager.py
-│   ├── github_integration_manager.py
-│   └── notification_manager.py
+│   ├── event_manager.py
+│   ├── repository_manager.py
+│   └── user_manager.py
 ├── public/               # Static assets
+│   ├── index.html
+│   └── favicon.ico
 ├── src/                  # React application source
 │   ├── index.js
 │   └── index.css
+├── data/                 # Database storage
+├── .env.example          # Example environment variables
+├── docker-compose.yml    # Docker Compose configuration
+├── Dockerfile            # Docker configuration
 ├── main.py               # Application entry point
 ├── package.json          # Node.js dependencies
 ├── requirements.txt      # Python dependencies
-└── tailwind.config.js    # Tailwind CSS configuration
+└── README.md             # Project documentation
 ```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature-name`
+3. Commit your changes: `git commit -m 'Add some feature'`
+4. Push to the branch: `git push origin feature-name`
+5. Submit a pull request
 
 ## License
 

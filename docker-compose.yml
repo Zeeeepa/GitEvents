@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  backend:
+    build: .
+    ports:
+      - "8001:8001"  # API
+      - "8002:8002"  # Webhook
+    volumes:
+      - ./data:/app/data
+    environment:
+      - API_PORT=8001
+      - WEBHOOK_PORT=8002
+      - GITHUB_EVENTS_DB=/app/data/github_events.db
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
+    restart: unless-stopped
+
+  frontend:
+    image: node:16-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8001/api
+    command: sh -c "npm install && npm start"
+    depends_on:
+      - backend
+    restart: unless-stopped
