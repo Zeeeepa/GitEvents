@@ -6,11 +6,11 @@ REM Set the working directory to the script's location
 cd /d "%~dp0"
 
 REM Windows CMD doesn't support ANSI color codes by default
-REM Removing ANSI color codes and using CMD color commands instead
+REM Using simple ASCII characters instead of Unicode box-drawing characters
 
-echo ===================================
-echo GitEvents - Update, Clean & Refresh
-echo ===================================
+echo +--------------------------------------------------+
+echo ^|  GitEvents - Update, Clean & Refresh             ^|
+echo +--------------------------------------------------+
 echo.
 
 REM Set error handling
@@ -226,9 +226,9 @@ if %WARNING_COUNT% GTR 0 (
 
 echo.
 color 0A
-echo ===================================
-echo GitEvents Update Complete!
-echo ===================================
+echo +--------------------------------------------------+
+echo ^|  GitEvents Update Complete!                      ^|
+echo +--------------------------------------------------+
 echo.
 echo [SUCCESS] GitEvents has been updated successfully.
 

@@ -7,11 +7,11 @@ cd /d "%~dp0"
 
 REM Set color codes for better visibility
 REM Windows CMD doesn't support ANSI color codes by default
-REM Removing ANSI color codes and using CMD color commands instead
+REM Using simple ASCII characters instead of Unicode box-drawing characters
 
-echo %CYAN%╔════════════════════════════════════════════════════════╗%RESET%
-echo %CYAN%║  GitEvents - Installation and Startup            ║%RESET%
-echo %CYAN%╚════════════════════════════════════════════════════════╝%RESET%
+echo +--------------------------------------------------+
+echo ^|  GitEvents - Installation and Startup            ^|
+echo +--------------------------------------------------+
 
 echo.
 
@@ -381,16 +381,6 @@ if %ERRORLEVEL% NEQ 0 (
     echo [OK] npm vulnerabilities fixed.
 )
 
-
-REM Fix the postinstall.js script to use the correct import path
-color 0B
-echo Checking and fixing React component imports...
-if exist scripts\postinstall.js (
-    powershell -Command "(Get-Content scripts\postinstall.js) -replace 'import GitHubEventsDashboard from ''\.\.\/dashboard\/GitHubEventsDashboard'';', 'import GitHubEventsDashboard from ''\.\/components\/dashboard\/GitHubEventsDashboard'';' | Set-Content scripts\postinstall.js"
-    color 0A
-    echo [OK] Fixed component import paths.
-)
-
 REM Ensure src/components/dashboard directory exists
 if not exist src\components\dashboard (
     mkdir src\components\dashboard
@@ -510,7 +500,7 @@ if %WARNING_COUNT% GTR 0 (
 REM Start backend server in a new window
 color 0B
 echo Starting backend server...
-start "GitEvents Backend" cmd /c "cd /d "%~dp0" && color 0A && echo GitEvents Backend Server && echo. && call venv\Scripts\activate.bat && python main.py"
+start "GitEvents Backend" cmd /c "cd /d "%~dp0" && color 0A && echo GitEvents Backend Server && echo. && call venv\Scripts\activate.bat && python main.py && pause"
 if %ERRORLEVEL% NEQ 0 (
     color 0C
     echo [ERROR] Failed to start backend server.
@@ -526,7 +516,7 @@ timeout /t 5 /nobreak > nul
 REM Start frontend server
 color 0B
 echo Starting frontend server...
-start "GitEvents Frontend" cmd /c "cd /d "%~dp0" && color 0B && echo GitEvents Frontend Server && echo. && npm start"
+start "GitEvents Frontend" cmd /c "cd /d "%~dp0" && color 0B && echo GitEvents Frontend Server && echo. && npm start && pause"
 if %ERRORLEVEL% NEQ 0 (
     color 0C
     echo [ERROR] Failed to start frontend server.
@@ -544,9 +534,9 @@ if %ERRORLEVEL% EQU 0 (
 )
 
 echo.
-echo %GREEN%╔════════════════════════════════════════════════════════╗%RESET%
-echo %GREEN%║  GitEvents Deployment Complete!                  ║%RESET%
-echo %GREEN%╚════════════════════════════════════════════════════════╝%RESET%
+echo +--------------------------------------------------+
+echo ^|  GitEvents Deployment Complete!                  ^|
+echo +--------------------------------------------------+
 
 echo.
 echo [SUCCESS] GitEvents is now running!
