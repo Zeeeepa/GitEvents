@@ -4,14 +4,8 @@ import DatabaseManagement from './DatabaseManagement';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001/api';
 
-const SettingsPanel = ({ onSettingsChanged }) => {
-  const [settings, setSettings] = useState({
-    notifications: { enabled: false },
-    auto_pr: { enabled: false, running: false, add_comment: false, comment_text: '' },
-    post_merge_scripts: { enabled: false, selected_project: '', selected_script: '' },
-    projects: [],
-    scripts: []
-  });
+const SettingsPanel = () => {
+  const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -25,7 +19,7 @@ const SettingsPanel = ({ onSettingsChanged }) => {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/settings/status`);
+      const response = await axios.get(`${API_BASE_URL}/settings`);
       setSettings(response.data);
       setError(null);
     } catch (err) {
@@ -36,44 +30,11 @@ const SettingsPanel = ({ onSettingsChanged }) => {
     }
   };
 
-  const handleToggle = (settingKey) => {
-    setSettings(prevSettings => {
-      const newSettings = { ...prevSettings };
-      newSettings[settingKey].enabled = !newSettings[settingKey].enabled;
-      return newSettings;
-    });
-  };
-
-  const handlePRCommentToggle = () => {
-    setSettings(prevSettings => {
-      const newSettings = { ...prevSettings };
-      newSettings.auto_pr.add_comment = !newSettings.auto_pr.add_comment;
-      return newSettings;
-    });
-  };
-
-  const handleCommentTextChange = (e) => {
-    setSettings(prevSettings => {
-      const newSettings = { ...prevSettings };
-      newSettings.auto_pr.comment_text = e.target.value;
-      return newSettings;
-    });
-  };
-
-  const handleProjectChange = (e) => {
-    setSettings(prevSettings => {
-      const newSettings = { ...prevSettings };
-      newSettings.post_merge_scripts.selected_project = e.target.value;
-      return newSettings;
-    });
-  };
-
-  const handleScriptChange = (e) => {
-    setSettings(prevSettings => {
-      const newSettings = { ...prevSettings };
-      newSettings.post_merge_scripts.selected_script = e.target.value;
-      return newSettings;
-    });
+  const handleChange = (field, value) => {
+    setSettings(prevSettings => ({
+      ...prevSettings,
+      [field]: value
+    }));
   };
 
   const saveSettings = async () => {
@@ -82,12 +43,9 @@ const SettingsPanel = ({ onSettingsChanged }) => {
       setSuccessMessage(null);
       setError(null);
       
-      await axios.post(`${API_BASE_URL}/settings/update`, settings);
+      await axios.post(`${API_BASE_URL}/settings`, settings);
       
       setSuccessMessage('Settings saved successfully!');
-      if (onSettingsChanged) {
-        onSettingsChanged();
-      }
     } catch (err) {
       console.error('Error saving settings:', err);
       setError('Failed to save settings. Please try again later.');
@@ -159,168 +117,52 @@ const SettingsPanel = ({ onSettingsChanged }) => {
           )}
           
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-medium">Notifications</h3>
-                <p className="text-sm text-gray-500">
-                  Receive notifications for GitHub events
-                </p>
-              </div>
-              <div className="relative inline-block w-12 mr-2 align-middle select-none">
-                <input
-                  type="checkbox"
-                  id="toggle-notifications"
-                  checked={settings.notifications.enabled}
-                  onChange={() => handleToggle('notifications')}
-                  className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                  style={{
-                    right: settings.notifications.enabled ? '0' : 'auto',
-                    transition: 'right 0.2s ease-in-out',
-                    backgroundColor: settings.notifications.enabled ? '#4F46E5' : 'white',
-                    borderColor: settings.notifications.enabled ? '#4F46E5' : '#D1D5DB'
-                  }}
-                />
-                <label
-                  htmlFor="toggle-notifications"
-                  className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
-                  style={{
-                    backgroundColor: settings.notifications.enabled ? '#C7D2FE' : '#D1D5DB'
-                  }}
-                ></label>
-              </div>
+            <div className="mb-4">
+              <label htmlFor="github-token" className="block text-sm font-medium text-gray-700">
+                GitHub Token
+              </label>
+              <input
+                type="password"
+                id="github-token"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="Enter your GitHub token"
+                value={settings.github_token || ''}
+                onChange={(e) => handleChange('github_token', e.target.value)}
+              />
+              <p className="mt-1 text-sm text-gray-500">
+                Your GitHub personal access token with repo and webhook permissions
+              </p>
             </div>
             
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-medium">Auto PR Creation</h3>
-                <p className="text-sm text-gray-500">
-                  Automatically create PRs for new branches
-                </p>
-              </div>
-              <div className="relative inline-block w-12 mr-2 align-middle select-none">
-                <input
-                  type="checkbox"
-                  id="toggle-auto-pr"
-                  checked={settings.auto_pr.enabled}
-                  onChange={() => handleToggle('auto_pr')}
-                  className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                  style={{
-                    right: settings.auto_pr.enabled ? '0' : 'auto',
-                    transition: 'right 0.2s ease-in-out',
-                    backgroundColor: settings.auto_pr.enabled ? '#4F46E5' : 'white',
-                    borderColor: settings.auto_pr.enabled ? '#4F46E5' : '#D1D5DB'
-                  }}
-                />
-                <label
-                  htmlFor="toggle-auto-pr"
-                  className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
-                  style={{
-                    backgroundColor: settings.auto_pr.enabled ? '#C7D2FE' : '#D1D5DB'
-                  }}
-                ></label>
-              </div>
+            <div className="flex items-center mb-4">
+              <input
+                type="checkbox"
+                id="enable-ngrok"
+                checked={settings.enable_ngrok || false}
+                onChange={(e) => handleChange('enable_ngrok', e.target.checked)}
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <label htmlFor="enable-ngrok" className="ml-2 block text-sm text-gray-700">
+                Enable Ngrok for webhook tunneling
+              </label>
             </div>
-
-            {settings.auto_pr.enabled && (
-              <div className="ml-6 p-4 border-l-2 border-indigo-100">
-                <div className="flex items-center mb-3">
-                  <input
-                    type="checkbox"
-                    id="toggle-pr-comment"
-                    checked={settings.auto_pr.add_comment}
-                    onChange={handlePRCommentToggle}
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="toggle-pr-comment" className="ml-2 block text-sm text-gray-700">
-                    Add Comment when PR is created
-                  </label>
-                </div>
-                
-                {settings.auto_pr.add_comment && (
-                  <div className="mt-2">
-                    <label htmlFor="pr-comment-text" className="block text-sm font-medium text-gray-700">
-                      Comment Text
-                    </label>
-                    <textarea
-                      id="pr-comment-text"
-                      rows="3"
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      placeholder="Enter comment text to add to new PRs"
-                      value={settings.auto_pr.comment_text}
-                      onChange={handleCommentTextChange}
-                    ></textarea>
-                  </div>
-                )}
-              </div>
-            )}
             
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-medium">Post-Merge Scripts</h3>
-                <p className="text-sm text-gray-500">
-                  Run scripts automatically after PR merges
-                </p>
-              </div>
-              <div className="relative inline-block w-12 mr-2 align-middle select-none">
+            {settings.enable_ngrok && (
+              <div className="mb-4 ml-6 p-4 border-l-2 border-indigo-100">
+                <label htmlFor="ngrok-token" className="block text-sm font-medium text-gray-700">
+                  Ngrok Auth Token
+                </label>
                 <input
-                  type="checkbox"
-                  id="toggle-post-merge"
-                  checked={settings.post_merge_scripts.enabled}
-                  onChange={() => handleToggle('post_merge_scripts')}
-                  className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                  style={{
-                    right: settings.post_merge_scripts.enabled ? '0' : 'auto',
-                    transition: 'right 0.2s ease-in-out',
-                    backgroundColor: settings.post_merge_scripts.enabled ? '#4F46E5' : 'white',
-                    borderColor: settings.post_merge_scripts.enabled ? '#4F46E5' : '#D1D5DB'
-                  }}
+                  type="password"
+                  id="ngrok-token"
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  placeholder="Enter your Ngrok auth token"
+                  value={settings.ngrok_auth_token || ''}
+                  onChange={(e) => handleChange('ngrok_auth_token', e.target.value)}
                 />
-                <label
-                  htmlFor="toggle-post-merge"
-                  className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"
-                  style={{
-                    backgroundColor: settings.post_merge_scripts.enabled ? '#C7D2FE' : '#D1D5DB'
-                  }}
-                ></label>
-              </div>
-            </div>
-
-            {settings.post_merge_scripts.enabled && (
-              <div className="ml-6 p-4 border-l-2 border-indigo-100">
-                <div className="mb-3">
-                  <label htmlFor="project-select" className="block text-sm font-medium text-gray-700">
-                    Select Project
-                  </label>
-                  <select
-                    id="project-select"
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                    value={settings.post_merge_scripts.selected_project}
-                    onChange={handleProjectChange}
-                  >
-                    <option value="">Select a project</option>
-                    {settings.projects && settings.projects.map((project, index) => (
-                      <option key={index} value={project.id}>{project.name}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="mb-3">
-                  <label htmlFor="script-select" className="block text-sm font-medium text-gray-700">
-                    Select Script
-                  </label>
-                  <select
-                    id="script-select"
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                    value={settings.post_merge_scripts.selected_script}
-                    onChange={handleScriptChange}
-                    disabled={!settings.post_merge_scripts.selected_project}
-                  >
-                    <option value="">Select a script</option>
-                    {settings.scripts && settings.scripts.map((script, index) => (
-                      <option key={index} value={script.id}>{script.name}</option>
-                    ))}
-                  </select>
-                </div>
+                <p className="mt-1 text-sm text-gray-500">
+                  Your Ngrok authentication token for creating tunnels
+                </p>
               </div>
             )}
             
