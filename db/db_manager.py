@@ -73,6 +73,14 @@ class DatabaseManager:
             inspector = inspect(self.engine)
             tables = inspector.get_table_names()
             
+            # Create initial data if needed
+            with self.get_session() as session:
+                # Check if we need to create initial data
+                repo_count = session.query(Repository).count()
+                if repo_count == 0:
+                    logger.info("Creating initial data...")
+                    # You can add initial data here if needed
+            
             return {
                 "success": True,
                 "message": f"Database initialized successfully with {len(tables)} tables",
@@ -243,30 +251,26 @@ class DatabaseManager:
             }
     
     def create_sqlite_db(self, db_path: str) -> Dict[str, Any]:
-        """Create a new SQLite database at the specified path"""
+        """Create a new SQLite database"""
         try:
             # Create directory if it doesn't exist
             db_dir = os.path.dirname(db_path)
             if db_dir and not os.path.exists(db_dir):
                 os.makedirs(db_dir)
             
-            # Create a new SQLite database
-            conn = sqlite3.connect(db_path)
-            conn.close()
+            # Create SQLite database URL
+            db_url = f"sqlite:///{db_path}"
             
-            # Update the configuration to use the new database
-            result = self.update_db_config({
-                "type": "sqlite",
-                "path": db_path
-            })
+            # Create engine and session
+            engine = create_engine(db_url)
             
-            if result["success"]:
-                return {
-                    "success": True,
-                    "message": f"Created new SQLite database at {db_path}"
-                }
-            else:
-                return result
+            # Create tables
+            Base.metadata.create_all(engine)
+            
+            return {
+                "success": True,
+                "message": f"SQLite database created successfully at {db_path}"
+            }
         except Exception as e:
             logger.error(f"Error creating SQLite database: {e}")
             return {
