@@ -13,10 +13,10 @@ from db.db_schema import Base, Repository, User, PullRequest, PREvent, BranchEve
 logger = logging.getLogger(__name__)
 
 class DatabaseManager:
-    """Manages SQLite database operations for GitHub events"""
+    """Manages database operations for GitHub events"""
     
     def __init__(self, db_path: str = "github_events.db"):
-        """Initialize the database manager with the path to the SQLite database"""
+        """Initialize the database manager with the path to the SQLite database or MySQL credentials"""
         self.db_path = db_path
         self.engine = None
         self.Session = None
@@ -25,13 +25,30 @@ class DatabaseManager:
     def _initialize_db(self) -> None:
         """Initialize the database connection and create tables if they don't exist"""
         try:
-            # Create directory if it doesn't exist
-            db_dir = os.path.dirname(self.db_path)
-            if db_dir and not os.path.exists(db_dir):
-                os.makedirs(db_dir)
+            # Determine database type from environment
+            db_type = os.getenv("DB_TYPE", "sqlite").lower()
             
-            # Create SQLite database URL
-            db_url = f"sqlite:///{self.db_path}"
+            if db_type == "mysql":
+                # MySQL configuration
+                db_host = os.getenv("DB_HOST", "localhost")
+                db_port = os.getenv("DB_PORT", "3306")
+                db_name = os.getenv("DB_NAME", "github_events")
+                db_user = os.getenv("DB_USER", "root")
+                db_password = os.getenv("DB_PASSWORD", "")
+                
+                # Create MySQL database URL
+                db_url = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+                logger.info(f"Using MySQL database at {db_host}:{db_port}/{db_name}")
+            else:
+                # SQLite configuration (default)
+                # Create directory if it doesn't exist
+                db_dir = os.path.dirname(self.db_path)
+                if db_dir and not os.path.exists(db_dir):
+                    os.makedirs(db_dir)
+                
+                # Create SQLite database URL
+                db_url = f"sqlite:///{self.db_path}"
+                logger.info(f"Using SQLite database at {self.db_path}")
             
             # Create engine and session
             self.engine = create_engine(db_url)
@@ -40,7 +57,7 @@ class DatabaseManager:
             # Create tables if they don't exist
             Base.metadata.create_all(self.engine)
             
-            logger.info(f"Database initialized at {self.db_path}")
+            logger.info("Database initialized successfully")
         except Exception as e:
             logger.error(f"Error initializing database: {e}")
             raise
