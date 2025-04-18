@@ -203,7 +203,7 @@ if %ERRORLEVEL% NEQ 0 (
 REM Check if database exists, if not create it
 if not exist github_events.db (
     echo Initializing database...
-    python -c "from db.db_manager import DatabaseManager; DatabaseManager('github_events.db').initialize_database()"
+    python -c "from db.db_manager import DatabaseManager; db = DatabaseManager('github_events.db'); db.initialize_database()"
     if %ERRORLEVEL% NEQ 0 (
         color 0C
         echo [ERROR] Failed to initialize database.
