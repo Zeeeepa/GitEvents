@@ -2,24 +2,31 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    curl \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy Python requirements and install them
+RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g npm@latest
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
+COPY package.json package-lock.json* ./
+RUN npm install
+
 COPY . .
 
-# Expose ports for API and webhook
+RUN mkdir -p /app/data
+
 EXPOSE 8001
 EXPOSE 8002
+EXPOSE 3000
 
-# Set environment variables
 ENV PYTHONUNBUFFERED=1
+ENV NODE_ENV=production
 
-# Run the application
 CMD ["python", "main.py"]
