@@ -245,60 +245,55 @@ class DatabaseManager:
                     if db_dir and not os.path.exists(db_dir):
                         os.makedirs(db_dir)
                     
-                    # Remove existing file if it exists
+                    # Remove existing database if it exists
                     if os.path.exists(db_path):
                         os.remove(db_path)
+                
+                # Update environment variables
+                os.environ["GITHUB_EVENTS_DB"] = db_path
+                
+                # Reinitialize database connection
+                self._initialize_db()
+                
+                return {
+                    "success": True,
+                    "message": f"Database configuration updated to SQLite at {db_path}"
+                }
             else:  # MySQL
-                os.environ["DB_HOST"] = db_config.get("host", "localhost")
-                os.environ["DB_PORT"] = str(db_config.get("port", "3306"))
-                os.environ["DB_NAME"] = db_config.get("name", "github_events")
-                os.environ["DB_USER"] = db_config.get("user", "root")
-                os.environ["DB_PASSWORD"] = db_config.get("password", "")
-            
-            # Close existing connections
-            if self.engine:
-                self.engine.dispose()
-            
-            # Reinitialize the database
-            self._initialize_db()
-            
-            return {
-                "success": True,
-                "message": f"Database configuration updated successfully"
-            }
+                host = db_config.get("host", "localhost")
+                port = db_config.get("port", "3306")
+                name = db_config.get("name", "github_events")
+                user = db_config.get("user", "root")
+                password = db_config.get("password", "")
+                
+                # Update instance variables
+                self.db_type = "mysql"
+                self.db_host = host
+                self.db_port = port
+                self.db_name = name
+                self.db_user = user
+                self.db_password = password
+                
+                # Update environment variables
+                os.environ["DB_HOST"] = host
+                os.environ["DB_PORT"] = str(port)
+                os.environ["DB_NAME"] = name
+                os.environ["DB_USER"] = user
+                if password:
+                    os.environ["DB_PASSWORD"] = password
+                
+                # Reinitialize database connection
+                self._initialize_db()
+                
+                return {
+                    "success": True,
+                    "message": f"Database configuration updated to MySQL at {host}:{port}/{name}"
+                }
         except Exception as e:
             logger.error(f"Error updating database configuration: {e}")
             return {
                 "success": False,
                 "message": f"Failed to update database configuration: {str(e)}"
-            }
-    
-    def create_sqlite_db(self, db_path: str) -> Dict[str, Any]:
-        """Create a new SQLite database"""
-        try:
-            # Create directory if it doesn't exist
-            db_dir = os.path.dirname(db_path)
-            if db_dir and not os.path.exists(db_dir):
-                os.makedirs(db_dir)
-            
-            # Create SQLite database URL
-            db_url = f"sqlite:///{db_path}"
-            
-            # Create engine and session
-            engine = create_engine(db_url)
-            
-            # Create tables
-            Base.metadata.create_all(engine)
-            
-            return {
-                "success": True,
-                "message": f"SQLite database created successfully at {db_path}"
-            }
-        except Exception as e:
-            logger.error(f"Error creating SQLite database: {e}")
-            return {
-                "success": False,
-                "message": f"Failed to create SQLite database: {str(e)}"
             }
     
     def save_repository(self, repo_data: Dict[str, Any]) -> Repository:
@@ -319,7 +314,9 @@ class DatabaseManager:
                         github_id=repo_data['id'],
                         name=repo_data['name'],
                         full_name=repo_data['full_name'],
-                        private=repo_data.get('private', False)
+                        private=repo_data.get('private', False),
+                        description=repo_data.get('description'),
+                        url=repo_data.get('html_url')
                     )
                     session.add(repo)
                 
@@ -552,4 +549,60 @@ class DatabaseManager:
                 return result
             except SQLAlchemyError as e:
                 logger.error(f"Error retrieving push events: {e}")
+                raise
+    
+    def get_all_events(self, limit: int = 30) -> List[Dict[str, Any]]:
+        """Get all recent events (PR, branch, push) combined"""
+        try:
+            pr_events = self.get_recent_pr_events(limit)
+            branch_events = self.get_recent_branch_events(limit)
+            push_events = self.get_recent_push_events(limit)
+            
+            # Combine all events with a type identifier
+            combined_events = []
+            
+            for event in pr_events:
+                event['event_category'] = 'pull_request'
+                combined_events.append(event)
+                
+            for event in branch_events:
+                event['event_category'] = 'branch'
+                combined_events.append(event)
+                
+            for event in push_events:
+                event['event_category'] = 'push'
+                combined_events.append(event)
+            
+            # Sort by created_at in descending order
+            combined_events.sort(key=lambda x: x['created_at'], reverse=True)
+            
+            # Limit the total number of events
+            return combined_events[:limit]
+        except Exception as e:
+            logger.error(f"Error retrieving all events: {e}")
+            raise
+    
+    def get_repositories(self) -> List[Dict[str, Any]]:
+        """Get all repositories"""
+        with self.get_session() as session:
+            try:
+                repos = session.query(Repository).all()
+                
+                # Convert to dictionary format
+                result = []
+                for repo in repos:
+                    repo_dict = {
+                        'id': repo.id,
+                        'github_id': repo.github_id,
+                        'name': repo.name,
+                        'full_name': repo.full_name,
+                        'private': repo.private,
+                        'description': repo.description,
+                        'url': repo.url
+                    }
+                    result.append(repo_dict)
+                
+                return result
+            except SQLAlchemyError as e:
+                logger.error(f"Error retrieving repositories: {e}")
                 raise

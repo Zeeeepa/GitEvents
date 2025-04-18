@@ -182,6 +182,7 @@ ENABLE_NGROK=true
 NGROK_AUTH_TOKEN=your_ngrok_auth_token_here
 
 OPEN_BROWSER=true
+DEV_MODE=true
 """
     
     try:
@@ -215,7 +216,8 @@ def load_env_config():
             "DB_PASSWORD": os.getenv("DB_PASSWORD", "password"),
             "ENABLE_NGROK": os.getenv("ENABLE_NGROK", "true").lower() == "true",
             "NGROK_AUTH_TOKEN": os.getenv("NGROK_AUTH_TOKEN", ""),
-            "OPEN_BROWSER": os.getenv("OPEN_BROWSER", "true").lower() == "true"
+            "OPEN_BROWSER": os.getenv("OPEN_BROWSER", "true").lower() == "true",
+            "DEV_MODE": os.getenv("DEV_MODE", "true").lower() == "true"
         }
         
         print("OK: Configuration loaded successfully")

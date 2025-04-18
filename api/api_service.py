@@ -143,14 +143,17 @@ async def get_settings():
         from api.settings_service import settings_service
         settings = settings_service.get_settings()
         
-        if "github_token" in settings and settings["github_token"]:
-            settings["github_token"] = "••••" + settings["github_token"][-4:]
+        dev_mode = os.getenv("DEV_MODE", "false").lower() == "true"
         
-        if "ngrok_auth_token" in settings and settings["ngrok_auth_token"]:
-            settings["ngrok_auth_token"] = "••••" + settings["ngrok_auth_token"][-4:]
-        
-        if "db_password" in settings and settings["db_password"]:
-            settings["db_password"] = "••••••"
+        if not dev_mode:
+            if "github_token" in settings and settings["github_token"]:
+                settings["github_token"] = "••••" + settings["github_token"][-4:]
+            
+            if "ngrok_auth_token" in settings and settings["ngrok_auth_token"]:
+                settings["ngrok_auth_token"] = "••••" + settings["ngrok_auth_token"][-4:]
+            
+            if "db_password" in settings and settings["db_password"]:
+                settings["db_password"] = "••••••"
         
         return settings
     except Exception as e:
@@ -175,6 +178,107 @@ async def update_settings(settings: SettingsUpdate):
     except Exception as e:
         logger.error(f"Error updating settings: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update settings: {str(e)}")
+
+@app.get("/api/settings/status")
+async def get_settings_status():
+    try:
+        import requests
+        from github import Github
+        
+        status = {
+            "github_api": {
+                "connected": False,
+                "message": "GitHub token not configured",
+                "username": None
+            },
+            "ngrok": {
+                "enabled": os.getenv("ENABLE_NGROK", "false").lower() == "true",
+                "connected": False,
+                "message": "Ngrok not enabled",
+                "webhook_url": None,
+                "api_url": None
+            }
+        }
+        
+        github_token = os.getenv("GITHUB_TOKEN")
+        if github_token:
+            try:
+                g = Github(github_token)
+                user = g.get_user()
+                username = user.login
+                status["github_api"] = {
+                    "connected": True,
+                    "message": f"Connected as {username}",
+                    "username": username
+                }
+            except Exception as e:
+                status["github_api"] = {
+                    "connected": False,
+                    "message": f"Failed to connect: {str(e)}",
+                    "username": None
+                }
+        
+        if status["ngrok"]["enabled"]:
+            try:
+                from api.ngrok_service import ngrok_service
+                
+                tunnel_status = ngrok_service.get_tunnel_status()
+                
+                if tunnel_status["webhook_active"] or tunnel_status["api_active"]:
+                    status["ngrok"] = {
+                        "enabled": True,
+                        "connected": True,
+                        "message": "Ngrok tunnels active",
+                        "webhook_url": tunnel_status["webhook_url"],
+                        "api_url": tunnel_status["api_url"]
+                    }
+                else:
+                    status["ngrok"] = {
+                        "enabled": True,
+                        "connected": False,
+                        "message": "Ngrok tunnels not active",
+                        "webhook_url": None,
+                        "api_url": None
+                    }
+            except ImportError:
+                status["ngrok"] = {
+                    "enabled": True,
+                    "connected": False,
+                    "message": "Ngrok module not available",
+                    "webhook_url": None,
+                    "api_url": None
+                }
+            except Exception as e:
+                status["ngrok"] = {
+                    "enabled": True,
+                    "connected": False,
+                    "message": f"Error checking ngrok status: {str(e)}",
+                    "webhook_url": None,
+                    "api_url": None
+                }
+        
+        return status
+    except Exception as e:
+        logger.error(f"Error getting settings status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get settings status: {str(e)}")
+
+@app.get("/api/events/all")
+async def get_all_events(limit: int = Query(30, ge=1, le=100)):
+    try:
+        events = db_manager.get_all_events(limit)
+        return events
+    except Exception as e:
+        logger.error(f"Error retrieving all events: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/repos")
+async def get_repositories():
+    try:
+        repos = db_manager.get_repositories()
+        return repos
+    except Exception as e:
+        logger.error(f"Error retrieving repositories: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
