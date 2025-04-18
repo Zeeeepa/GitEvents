@@ -12,9 +12,9 @@ set "RED=[91m"
 set "CYAN=[96m"
 set "RESET=[0m"
 
-echo %CYAN%╔══════════════════════════════════════════════════╗%RESET%
+echo %CYAN%╔════════════════════════════════════════════════════════╗%RESET%
 echo %CYAN%║  GitEvents - Installation and Startup            ║%RESET%
-echo %CYAN%╚══════════════════════════════════════════════════╝%RESET%
+echo %CYAN%╚════════════════════════════════════════════════════════╝%RESET%
 echo.
 
 REM Set error handling
@@ -335,13 +335,6 @@ if %ERRORLEVEL% NEQ 0 (
     echo %GREEN%[OK] npm vulnerabilities fixed.%RESET%
 )
 
-REM Fix the postinstall.js script to use the correct import path
-echo %CYAN%Checking and fixing React component imports...%RESET%
-if exist scripts\postinstall.js (
-    powershell -Command "(Get-Content scripts\postinstall.js) -replace 'import GitHubEventsDashboard from ''\.\.\/dashboard\/GitHubEventsDashboard'';', 'import GitHubEventsDashboard from ''\.\/components\/dashboard\/GitHubEventsDashboard'';' | Set-Content scripts\postinstall.js"
-    echo %GREEN%[OK] Fixed component import paths.%RESET%
-)
-
 REM Ensure src/components/dashboard directory exists
 if not exist src\components\dashboard (
     mkdir src\components\dashboard
@@ -471,9 +464,9 @@ if %ERRORLEVEL% EQU 0 (
 )
 
 echo.
-echo %GREEN%╔══════════════════════════════════════════════════╗%RESET%
+echo %GREEN%╔════════════════════════════════════════════════════════╗%RESET%
 echo %GREEN%║  GitEvents Deployment Complete!                  ║%RESET%
-echo %GREEN%╚══════════════════════════════════════════════════╝%RESET%
+echo %GREEN%╚════════════════════════════════════════════════════════╝%RESET%
 echo.
 echo %GREEN%[SUCCESS] GitEvents is now running!%RESET%
 echo %CYAN%Backend: http://localhost:8001%RESET%
