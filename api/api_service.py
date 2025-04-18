@@ -6,6 +6,7 @@ import logging
 from pydantic import BaseModel
 
 from db.db_manager import DatabaseManager
+from managers.auto_branch_pr_manager import AutoBranchPRManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -14,6 +15,9 @@ logger = logging.getLogger(__name__)
 # Initialize database manager
 db_path = os.getenv("GITHUB_EVENTS_DB", "github_events.db")
 db_manager = DatabaseManager(db_path)
+
+# Initialize auto branch PR manager
+auto_pr_manager = AutoBranchPRManager()
 
 # Initialize FastAPI app
 app = FastAPI(title="GitHub Events API", description="API for GitHub events stored in the database")
@@ -57,6 +61,26 @@ class PushEventResponse(BaseModel):
     repository_id: int
     sender_id: int
     commits: List[Dict[str, Any]]
+
+class Project(BaseModel):
+    id: str
+    name: str
+    added_at: str
+
+class Script(BaseModel):
+    id: str
+    name: str
+    project_id: str
+    script_path: str
+    enabled: bool
+    added_at: str
+
+class SettingsResponse(BaseModel):
+    notifications: Dict[str, Any]
+    auto_pr: Dict[str, Any]
+    post_merge_scripts: Dict[str, Any]
+    projects: List[Dict[str, Any]]
+    scripts: List[Dict[str, Any]]
 
 # Endpoints
 @app.get("/api/events/pr", response_model=List[PREventResponse])
@@ -219,18 +243,85 @@ async def get_repositories():
         logger.error(f"Error retrieving repositories: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Project and script management endpoints
+@app.get("/api/projects")
+async def get_projects():
+    """Get all projects"""
+    try:
+        projects = auto_pr_manager.get_projects()
+        return projects
+    except Exception as e:
+        logger.error(f"Error retrieving projects: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/projects")
+async def add_project(project: Project):
+    """Add a new project"""
+    try:
+        success = auto_pr_manager.add_project(project.name, project.id)
+        if success:
+            return {"success": True, "message": f"Project {project.name} added successfully"}
+        else:
+            raise HTTPException(status_code=400, detail=f"Failed to add project {project.name}")
+    except Exception as e:
+        logger.error(f"Error adding project: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/scripts")
+async def get_scripts():
+    """Get all scripts"""
+    try:
+        scripts = auto_pr_manager.get_post_merge_scripts()
+        return scripts
+    except Exception as e:
+        logger.error(f"Error retrieving scripts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/scripts")
+async def add_script(script: Script):
+    """Add a new script"""
+    try:
+        success = auto_pr_manager.add_post_merge_script(
+            script.name, 
+            script.script_path, 
+            repo_patterns=[]
+        )
+        if success:
+            return {"success": True, "message": f"Script {script.name} added successfully"}
+        else:
+            raise HTTPException(status_code=400, detail=f"Failed to add script {script.name}")
+    except Exception as e:
+        logger.error(f"Error adding script: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Settings endpoints
-@app.get("/api/settings/status")
+@app.get("/api/settings/status", response_model=SettingsResponse)
 async def get_system_status():
     """Get the current system status and settings"""
     try:
-        # In a real application, this would fetch from a settings database
-        # For now, we'll return mock data
-        return {
+        # Get settings from auto_pr_manager
+        auto_pr_settings = auto_pr_manager.config.get("auto_pr_settings", {})
+        post_merge_settings = auto_pr_manager.config.get("post_merge_scripts", {})
+        
+        # Prepare response
+        settings = {
             "notifications": {"enabled": True},
-            "auto_pr": {"enabled": False, "running": False},
-            "post_merge_scripts": {"enabled": True}
+            "auto_pr": {
+                "enabled": auto_pr_manager.config.get("auto_pr_enabled", False),
+                "running": auto_pr_manager.running,
+                "add_comment": auto_pr_settings.get("add_comment", False),
+                "comment_text": auto_pr_settings.get("comment_text", "")
+            },
+            "post_merge_scripts": {
+                "enabled": post_merge_settings.get("enabled", False),
+                "selected_project": post_merge_settings.get("selected_project", ""),
+                "selected_script": post_merge_settings.get("selected_script", "")
+            },
+            "projects": auto_pr_manager.get_projects(),
+            "scripts": auto_pr_manager.get_post_merge_scripts()
         }
+        
+        return settings
     except Exception as e:
         logger.error(f"Error retrieving system status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -239,10 +330,49 @@ async def get_system_status():
 async def update_system_settings(settings: Dict[str, Any]):
     """Update system settings"""
     try:
-        # In a real application, this would update a settings database
-        # For now, we'll just log the request
-        logger.info(f"Updating system settings: {settings}")
-        return {"success": True, "message": "Settings updated successfully"}
+        # Update auto_pr_manager settings
+        new_config = {}
+        
+        if "auto_pr" in settings:
+            auto_pr = settings["auto_pr"]
+            new_config["auto_pr_enabled"] = auto_pr.get("enabled", False)
+            
+            if "add_comment" in auto_pr or "comment_text" in auto_pr:
+                new_config["auto_pr_settings"] = {}
+                if "add_comment" in auto_pr:
+                    new_config["auto_pr_settings"]["add_comment"] = auto_pr["add_comment"]
+                if "comment_text" in auto_pr:
+                    new_config["auto_pr_settings"]["comment_text"] = auto_pr["comment_text"]
+        
+        if "post_merge_scripts" in settings:
+            post_merge = settings["post_merge_scripts"]
+            new_config["post_merge_scripts"] = {
+                "enabled": post_merge.get("enabled", False)
+            }
+            
+            if "selected_project" in post_merge:
+                new_config["post_merge_scripts"]["selected_project"] = post_merge["selected_project"]
+            
+            if "selected_script" in post_merge:
+                new_config["post_merge_scripts"]["selected_script"] = post_merge["selected_script"]
+        
+        # Update the configuration
+        success = auto_pr_manager.update_config(new_config)
+        
+        # Start or stop the branch monitor based on settings
+        if "auto_pr" in settings and "enabled" in settings["auto_pr"]:
+            if settings["auto_pr"]["enabled"] and not auto_pr_manager.running:
+                # Initialize with a dummy token for now
+                # In a real app, this would use a stored token
+                auto_pr_manager.initialize("dummy_token")
+                auto_pr_manager.start_branch_monitor()
+            elif not settings["auto_pr"]["enabled"] and auto_pr_manager.running:
+                auto_pr_manager.stop_branch_monitor()
+        
+        if success:
+            return {"success": True, "message": "Settings updated successfully"}
+        else:
+            raise HTTPException(status_code=400, detail="Failed to update settings")
     except Exception as e:
         logger.error(f"Error updating system settings: {e}")
         raise HTTPException(status_code=500, detail=str(e))
