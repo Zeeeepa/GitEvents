@@ -94,22 +94,159 @@ if not exist .git (
     exit /b 1
 )
 
-REM Check if .env file exists, if not create from example
+REM Check if .env file exists, if not create with interactive prompts
 if not exist .env (
-    if exist .env.example (
-        echo Creating .env file from .env.example...
-        copy .env.example .env
-        echo [OK] .env file created. Please edit it with your configuration.
-        echo.
+    echo Creating .env file...
+    echo # GitEvents Environment Configuration > .env
+    
+    REM GitHub Configuration
+    echo.
+    echo ===================================
+    echo GitHub Configuration
+    echo ===================================
+    
+    set /p GITHUB_TOKEN=Enter your GitHub API token (or press Enter to use default): 
+    if "!GITHUB_TOKEN!"=="" (
+        set GITHUB_TOKEN=your_github_token_here
+        echo [INFO] Using default GitHub token placeholder. You'll need to update this later.
     ) else (
-        echo Creating default .env file...
-        echo # GitEvents Environment Configuration > .env
-        echo GITHUB_WEBHOOK_SECRET=your_webhook_secret_here >> .env
-        echo GITHUB_API_TOKEN=your_github_token_here >> .env
-        echo GITHUB_EVENTS_DB=github_events.db >> .env
-        echo API_PORT=8001 >> .env
-        echo [OK] Default .env file created. Please edit it with your configuration.
-        echo.
+        echo [OK] GitHub token set.
+    )
+    echo GITHUB_TOKEN=!GITHUB_TOKEN! >> .env
+    
+    set /p GITHUB_WEBHOOK_SECRET=Enter your GitHub webhook secret (or press Enter to use default): 
+    if "!GITHUB_WEBHOOK_SECRET!"=="" (
+        set GITHUB_WEBHOOK_SECRET=your_webhook_secret_here
+        echo [INFO] Using default webhook secret placeholder. You'll need to update this later.
+    ) else (
+        echo [OK] GitHub webhook secret set.
+    )
+    echo GITHUB_WEBHOOK_SECRET=!GITHUB_WEBHOOK_SECRET! >> .env
+    
+    REM Database Configuration
+    echo.
+    echo ===================================
+    echo Database Configuration
+    echo ===================================
+    
+    echo Select database type:
+    echo 1. SQLite (default, recommended for local development)
+    echo 2. MySQL
+    set /p DB_TYPE_CHOICE=Enter your choice (1 or 2): 
+    
+    if "!DB_TYPE_CHOICE!"=="2" (
+        echo DB_TYPE=mysql >> .env
+        
+        set /p DB_HOST=Enter database host (or press Enter for localhost): 
+        if "!DB_HOST!"=="" set DB_HOST=localhost
+        echo DB_HOST=!DB_HOST! >> .env
+        
+        set /p DB_PORT=Enter database port (or press Enter for 3306): 
+        if "!DB_PORT!"=="" set DB_PORT=3306
+        echo DB_PORT=!DB_PORT! >> .env
+        
+        set /p DB_NAME=Enter database name (or press Enter for github_events): 
+        if "!DB_NAME!"=="" set DB_NAME=github_events
+        echo DB_NAME=!DB_NAME! >> .env
+        
+        set /p DB_USER=Enter database username: 
+        echo DB_USER=!DB_USER! >> .env
+        
+        set /p DB_PASSWORD=Enter database password: 
+        echo DB_PASSWORD=!DB_PASSWORD! >> .env
+        
+        echo [OK] MySQL database configuration set.
+    ) else (
+        set /p GITHUB_EVENTS_DB=Enter SQLite database path (or press Enter for github_events.db): 
+        if "!GITHUB_EVENTS_DB!"=="" set GITHUB_EVENTS_DB=github_events.db
+        echo GITHUB_EVENTS_DB=!GITHUB_EVENTS_DB! >> .env
+        
+        echo [OK] SQLite database configuration set.
+    )
+    
+    REM API Configuration
+    echo.
+    echo ===================================
+    echo API Configuration
+    echo ===================================
+    
+    set /p API_PORT=Enter API port (or press Enter for 8001): 
+    if "!API_PORT!"=="" set API_PORT=8001
+    echo API_PORT=!API_PORT! >> .env
+    
+    set /p WEBHOOK_PORT=Enter webhook port (or press Enter for 8002): 
+    if "!WEBHOOK_PORT!"=="" set WEBHOOK_PORT=8002
+    echo WEBHOOK_PORT=!WEBHOOK_PORT! >> .env
+    
+    REM Frontend Configuration
+    echo.
+    echo ===================================
+    echo Frontend Configuration
+    echo ===================================
+    
+    set /p REACT_APP_API_URL=Enter API URL for frontend (or press Enter for http://localhost:8001/api): 
+    if "!REACT_APP_API_URL!"=="" set REACT_APP_API_URL=http://localhost:8001/api
+    echo REACT_APP_API_URL=!REACT_APP_API_URL! >> .env
+    
+    REM Ngrok Configuration
+    echo.
+    echo ===================================
+    echo Ngrok Configuration (Optional)
+    echo ===================================
+    
+    set /p ENABLE_NGROK=Enable Ngrok for webhook tunneling? (true/false, default: false): 
+    if "!ENABLE_NGROK!"=="" set ENABLE_NGROK=false
+    echo ENABLE_NGROK=!ENABLE_NGROK! >> .env
+    
+    if "!ENABLE_NGROK!"=="true" (
+        set /p NGROK_AUTH_TOKEN=Enter your Ngrok auth token: 
+        echo NGROK_AUTH_TOKEN=!NGROK_AUTH_TOKEN! >> .env
+    ) else (
+        echo NGROK_AUTH_TOKEN=your_ngrok_auth_token_here >> .env
+    )
+    
+    REM Windows-specific Configuration
+    echo.
+    echo ===================================
+    echo Windows Configuration
+    echo ===================================
+    
+    set /p OPEN_BROWSER=Automatically open browser when starting? (true/false, default: false): 
+    if "!OPEN_BROWSER!"=="" set OPEN_BROWSER=false
+    echo OPEN_BROWSER=!OPEN_BROWSER! >> .env
+    
+    echo [OK] .env file created successfully.
+    echo.
+) else (
+    echo [INFO] .env file already exists. Skipping configuration.
+    
+    REM Check if essential variables are set in .env
+    set MISSING_VARS=0
+    
+    findstr /C:"GITHUB_TOKEN=your_github_token_here" .env >nul 2>&1
+    if %ERRORLEVEL% EQU 0 (
+        echo [WARNING] GitHub token is not set in .env file.
+        set /p UPDATE_TOKEN=Would you like to update it now? (Y/N): 
+        if /i "!UPDATE_TOKEN!"=="Y" (
+            set /p NEW_TOKEN=Enter your GitHub API token: 
+            powershell -Command "(Get-Content .env) -replace 'GITHUB_TOKEN=your_github_token_here', 'GITHUB_TOKEN=!NEW_TOKEN!' | Set-Content .env"
+            echo [OK] GitHub token updated.
+        ) else (
+            set /a WARNING_COUNT+=1
+        )
+    )
+    
+    findstr /C:"GITHUB_WEBHOOK_SECRET=your_webhook_secret_here" .env >nul 2>&1
+    if %ERRORLEVEL% EQU 0 (
+        echo [WARNING] GitHub webhook secret is not set in .env file.
+        set /p UPDATE_SECRET=Would you like to update it now? (Y/N): 
+        if /i "!UPDATE_SECRET!"=="Y" (
+            set /p NEW_SECRET=Enter your GitHub webhook secret: 
+            powershell -Command "(Get-Content .env) -replace 'GITHUB_WEBHOOK_SECRET=your_webhook_secret_here', 'GITHUB_WEBHOOK_SECRET=!NEW_SECRET!' | Set-Content .env"
+            echo [OK] GitHub webhook secret updated.
+        ) else (
+            set /a WARNING_COUNT+=1
+        )
     )
 )
 
@@ -201,15 +338,67 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 REM Check if database exists, if not create it
-if not exist github_events.db (
-    echo Initializing database...
-    python -c "from db.db_manager import DatabaseManager; db = DatabaseManager('github_events.db'); db.initialize_database()"
+set DB_TYPE=sqlite
+findstr /C:"DB_TYPE=mysql" .env >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    set DB_TYPE=mysql
+)
+
+if "%DB_TYPE%"=="sqlite" (
+    set DB_PATH=github_events.db
+    for /f "tokens=2 delims==" %%a in ('findstr /C:"GITHUB_EVENTS_DB=" .env') do (
+        set DB_PATH=%%a
+    )
+    
+    if not exist "!DB_PATH!" (
+        echo Initializing SQLite database...
+        python -c "from db.db_manager import DatabaseManager; db = DatabaseManager('!DB_PATH!'); db.initialize_database()"
+        if %ERRORLEVEL% NEQ 0 (
+            color 0C
+            echo [ERROR] Failed to initialize database.
+            set /a ERROR_COUNT+=1
+        ) else (
+            echo [OK] Database initialized.
+        )
+    ) else (
+        echo [INFO] SQLite database already exists at !DB_PATH!
+        set /p REINIT_DB=Would you like to reinitialize the database? (Y/N): 
+        if /i "!REINIT_DB!"=="Y" (
+            echo Reinitializing SQLite database...
+            python -c "from db.db_manager import DatabaseManager; db = DatabaseManager('!DB_PATH!'); db.initialize_database()"
+            if %ERRORLEVEL% NEQ 0 (
+                color 0C
+                echo [ERROR] Failed to reinitialize database.
+                set /a ERROR_COUNT+=1
+            ) else (
+                echo [OK] Database reinitialized.
+            )
+        )
+    )
+) else (
+    echo Checking MySQL database connection...
+    for /f "tokens=2 delims==" %%a in ('findstr /C:"DB_HOST=" .env') do set DB_HOST=%%a
+    for /f "tokens=2 delims==" %%a in ('findstr /C:"DB_PORT=" .env') do set DB_PORT=%%a
+    for /f "tokens=2 delims==" %%a in ('findstr /C:"DB_NAME=" .env') do set DB_NAME=%%a
+    for /f "tokens=2 delims==" %%a in ('findstr /C:"DB_USER=" .env') do set DB_USER=%%a
+    for /f "tokens=2 delims==" %%a in ('findstr /C:"DB_PASSWORD=" .env') do set DB_PASSWORD=%%a
+    
+    echo Testing connection to MySQL database at !DB_HOST!:!DB_PORT!/!DB_NAME!...
+    python -c "from db.db_manager import DatabaseManager; db_config = {'type': 'mysql', 'host': '!DB_HOST!', 'port': '!DB_PORT!', 'name': '!DB_NAME!', 'user': '!DB_USER!', 'password': '!DB_PASSWORD!'}; db = DatabaseManager(); result = db.test_connection(db_config); print(result['message']); exit(0 if result['success'] else 1)"
     if %ERRORLEVEL% NEQ 0 (
         color 0C
-        echo [ERROR] Failed to initialize database.
+        echo [ERROR] Failed to connect to MySQL database.
         set /a ERROR_COUNT+=1
     ) else (
-        echo [OK] Database initialized.
+        echo Initializing MySQL database...
+        python -c "from db.db_manager import DatabaseManager; db = DatabaseManager(); db.initialize_database()"
+        if %ERRORLEVEL% NEQ 0 (
+            color 0C
+            echo [ERROR] Failed to initialize MySQL database.
+            set /a ERROR_COUNT+=1
+        ) else (
+            echo [OK] MySQL database initialized.
+        )
     )
 )
 
@@ -241,7 +430,7 @@ if %WARNING_COUNT% GTR 0 (
 
 REM Start backend server in a new window
 echo Starting backend server...
-start "GitEvents Backend" cmd /k "color 0A && echo GitEvents Backend Server && echo. && call venv\Scripts\activate.bat && python main.py"
+start "GitEvents Backend" cmd /k "color 0A && echo GitEvents Backend Server && echo. && cd /d %~dp0 && call venv\Scripts\activate.bat && python main.py"
 if %ERRORLEVEL% NEQ 0 (
     color 0C
     echo [ERROR] Failed to start backend server.
@@ -255,7 +444,7 @@ timeout /t 5 /nobreak > nul
 
 REM Start frontend server
 echo Starting frontend server...
-start "GitEvents Frontend" cmd /k "color 0B && echo GitEvents Frontend Server && echo. && npm start"
+start "GitEvents Frontend" cmd /k "color 0B && echo GitEvents Frontend Server && echo. && cd /d %~dp0 && npm start"
 if %ERRORLEVEL% NEQ 0 (
     color 0C
     echo [ERROR] Failed to start frontend server.
