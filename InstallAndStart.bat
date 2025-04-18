@@ -418,6 +418,29 @@ if %ERRORLEVEL% NEQ 0 (
     echo %GREEN%[OK] Node.js dependencies installed successfully.%RESET%
 )
 
+REM Ensure react-scripts is installed globally
+echo %CYAN%Ensuring react-scripts is installed...%RESET%
+call npm list -g react-scripts >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo %CYAN%Installing react-scripts globally...%RESET%
+    call npm install -g react-scripts
+    if %ERRORLEVEL% NEQ 0 (
+        echo %YELLOW%[WARNING] Failed to install react-scripts globally. Trying locally...%RESET%
+        call npm install react-scripts --save-dev
+        if %ERRORLEVEL% NEQ 0 (
+            echo %RED%[ERROR] Failed to install react-scripts.%RESET%
+            echo The frontend build process may not work correctly.
+            set /a ERROR_COUNT+=1
+        ) else {
+            echo %GREEN%[OK] react-scripts installed locally.%RESET%
+        }
+    ) else (
+        echo %GREEN%[OK] react-scripts installed globally.%RESET%
+    )
+) else (
+    echo %GREEN%[OK] react-scripts is already installed globally.%RESET%
+)
+
 REM Fix npm vulnerabilities
 echo %CYAN%Fixing npm vulnerabilities...%RESET%
 call npm audit fix --force
