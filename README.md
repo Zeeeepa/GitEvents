@@ -9,12 +9,15 @@ GitEvents is a comprehensive dashboard for monitoring GitHub events in real-time
 - **Pull Request Tracking**: Monitor pull requests and their status
 - **Customizable Settings**: Configure notifications and automation
 - **System Configuration**: Set up GitHub integration and webhooks
+- **Webhook Support**: Receive and process GitHub webhook events
+- **Docker Support**: Easy deployment with Docker and Docker Compose
 
 ## Tech Stack
 
 - **Frontend**: React with Tailwind CSS
 - **Backend**: Python with FastAPI
 - **Database**: SQLite with SQLAlchemy ORM
+- **Containerization**: Docker and Docker Compose
 
 ## Installation
 
@@ -23,8 +26,9 @@ GitEvents is a comprehensive dashboard for monitoring GitHub events in real-time
 - Node.js (v14+)
 - Python (v3.8+)
 - Git
+- Docker and Docker Compose (optional, for containerized deployment)
 
-### Backend Setup
+### Environment Setup
 
 1. Clone the repository:
    ```
@@ -32,41 +36,85 @@ GitEvents is a comprehensive dashboard for monitoring GitHub events in real-time
    cd GitEvents
    ```
 
-2. Install Python dependencies:
+2. Create a `.env` file based on the example:
+   ```
+   cp .env.example .env
+   ```
+
+3. Edit the `.env` file with your GitHub token and other settings:
+   ```
+   # API Configuration
+   API_PORT=8001
+   WEBHOOK_PORT=8002
+
+   # GitHub Configuration
+   GITHUB_TOKEN=your_github_token_here
+   GITHUB_WEBHOOK_SECRET=your_webhook_secret_here
+
+   # Database Configuration
+   GITHUB_EVENTS_DB=github_events.db
+
+   # Frontend Configuration
+   REACT_APP_API_URL=http://localhost:8001/api
+   ```
+
+### Standard Setup
+
+#### Backend Setup
+
+1. Install Python dependencies:
    ```
    pip install -r requirements.txt
    ```
 
-3. Set up environment variables (optional):
-   ```
-   export GITHUB_EVENTS_DB=path/to/database.db
-   export API_PORT=8001
-   ```
-
-4. Start the backend server:
+2. Start the backend server:
    ```
    python main.py
    ```
 
-### Frontend Setup
+   This will start both the API server on port 8001 and the webhook handler on port 8002.
+
+#### Frontend Setup
 
 1. Install Node.js dependencies:
    ```
    npm install
    ```
 
-2. Set up environment variables (optional):
-   Create a `.env` file in the root directory:
-   ```
-   REACT_APP_API_URL=http://localhost:8001/api
-   ```
-
-3. Start the frontend development server:
+2. Start the frontend development server:
    ```
    npm start
    ```
 
-4. Open your browser and navigate to `http://localhost:3000`
+3. Open your browser and navigate to `http://localhost:3000`
+
+### Docker Setup
+
+1. Make sure Docker and Docker Compose are installed on your system.
+
+2. Build and start the containers:
+   ```
+   docker-compose up -d
+   ```
+
+3. Open your browser and navigate to `http://localhost:3000`
+
+4. To stop the containers:
+   ```
+   docker-compose down
+   ```
+
+## Webhook Configuration
+
+To receive GitHub webhook events:
+
+1. Go to your GitHub repository settings
+2. Navigate to Webhooks > Add webhook
+3. Set the Payload URL to `http://your-server:8002/webhook/github`
+4. Set the Content type to `application/json`
+5. Set the Secret to match your `GITHUB_WEBHOOK_SECRET` environment variable
+6. Select the events you want to receive (recommended: Pull requests, Pushes, and Branch creation/deletion)
+7. Ensure the webhook is active
 
 ## Usage
 
@@ -93,8 +141,9 @@ Set up GitHub integration, webhook configuration, and database settings.
 ```
 GitEvents/
 ├── api/                  # Backend API code
-│   ├── api_service.py    # FastAPI application
-│   └── api_service_settings.py
+│   ├── api_service.py    # FastAPI application for main API
+│   ├── api_service_settings.py
+│   └── webhook_handler.py # Webhook handler for GitHub events
 ├── dashboard/            # Frontend React components
 │   ├── GitHubEventsDashboard.jsx
 │   ├── RecentEvents.jsx
@@ -115,6 +164,10 @@ GitEvents/
 ├── src/                  # React application source
 │   ├── index.js
 │   └── index.css
+├── data/                 # Database storage
+├── .env.example          # Example environment variables
+├── docker-compose.yml    # Docker Compose configuration
+├── Dockerfile            # Docker configuration
 ├── main.py               # Application entry point
 ├── package.json          # Node.js dependencies
 ├── requirements.txt      # Python dependencies

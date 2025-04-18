@@ -6,18 +6,15 @@ from fastapi import Request
 from github import Github
 from pydantic import BaseModel
 
-from db_manager import DatabaseManager
-from codegen.extensions.events.interface import EventHandlerManagerProtocol
-from codegen.extensions.github.types.base import GitHubInstallation, GitHubWebhookPayload
-from codegen.shared.logging.get_logger import get_logger
+from db.db_manager import DatabaseManager
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 # Type variable for event types
 T = TypeVar("T", bound=BaseModel)
 
-class GitHub(EventHandlerManagerProtocol):
+class GitHub:
     def __init__(self, app):
         self.app = app
         self.registered_handlers = {}
@@ -278,23 +275,22 @@ class GitHub(EventHandlerManagerProtocol):
         except Exception as e:
             logger.error(f"Error storing branch event: {e}")
 
-    async def handle(self, event: dict, request: Request | None = None) -> dict:
+    async def handle(self, event: dict, request: Optional[Request] = None) -> dict:
         """Handle both webhook events and installation callbacks."""
         logger.info("[HANDLER] Handling GitHub event")
 
         # Check if this is an installation event
         if "installation_id" in event and "code" in event:
-            installation = GitHubInstallation.model_validate(event)
             logger.info("=====[GITHUB APP INSTALLATION]=====")
-            logger.info(f"Code: {installation.code}")
-            logger.info(f"Installation ID: {installation.installation_id}")
-            logger.info(f"Setup Action: {installation.setup_action}")
+            logger.info(f"Code: {event['code']}")
+            logger.info(f"Installation ID: {event['installation_id']}")
+            logger.info(f"Setup Action: {event.get('setup_action', 'unknown')}")
             return {
                 "message": "GitHub app installation details received",
                 "details": {
-                    "code": installation.code,
-                    "installation_id": installation.installation_id,
-                    "setup_action": installation.setup_action,
+                    "code": event['code'],
+                    "installation_id": event['installation_id'],
+                    "setup_action": event.get('setup_action', 'unknown'),
                 },
             }
 
@@ -329,10 +325,9 @@ class GitHub(EventHandlerManagerProtocol):
                     handler = self.registered_handlers[event_type]
                     return handler(event)
 
-            # For actual webhooks, use the full payload
-            webhook = GitHubWebhookPayload.model_validate({"headers": headers, "event": event})
-            event_type = webhook.headers.event_type
-            action = webhook.event.action
+            # For actual webhooks, use the headers to determine event type
+            event_type = headers.get("x-github-event", "unknown")
+            action = event.get("action")
             full_event_type = f"{event_type}:{action}" if action else event_type
 
             if full_event_type not in self.registered_handlers:
@@ -340,7 +335,7 @@ class GitHub(EventHandlerManagerProtocol):
                 
                 # Still store the event in DB even if no handler is registered
                 try:
-                    self._store_event_in_db(full_event_type, webhook.event)
+                    self._store_event_in_db(full_event_type, event)
                 except Exception as e:
                     logger.error(f"Error storing unhandled webhook event in DB: {e}")
                 
