@@ -88,6 +88,33 @@ if not exist node_modules (
     echo [OK] Node.js packages installed.
 )
 
+REM Check if react-scripts is installed
+call npm list react-scripts >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    color 0E
+    echo [WARNING] react-scripts not found in local dependencies.
+    echo Installing react-scripts...
+    
+    REM Try installing locally first
+    npm install react-scripts --save-dev
+    if %ERRORLEVEL% NEQ 0 (
+        echo [WARNING] Failed to install react-scripts locally. Trying globally...
+        npm install -g react-scripts
+        if %ERRORLEVEL% NEQ 0 (
+            color 0C
+            echo [ERROR] Failed to install react-scripts. The application may not work correctly.
+            echo Please run 'npm install react-scripts' manually.
+            pause
+        ) else (
+            color 0A
+            echo [OK] react-scripts installed globally.
+        )
+    ) else (
+        color 0A
+        echo [OK] react-scripts installed locally.
+    )
+)
+
 REM Start backend server in a new window
 echo Starting backend server...
 start "GitEvents Backend" cmd /c "cd /d "%~dp0" && color 0A && echo GitEvents Backend Server && echo. && call venv\Scripts\activate.bat && python main.py"
