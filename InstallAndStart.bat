@@ -2,26 +2,22 @@
 setlocal enabledelayedexpansion
 color 0A
 
-REM Set the working directory to the script's location
 cd /d "%~dp0"
 
-REM Set color codes for better visibility
 set "GREEN=[92m"
 set "YELLOW=[93m"
 set "RED=[91m"
 set "CYAN=[96m"
 set "RESET=[0m"
 
-echo %CYAN%╔══════════════════════════════════════════════════╗%RESET%
+echo %CYAN%╔════════════════════════════════════════════════╗%RESET%
 echo %CYAN%║  GitEvents - Installation and Startup            ║%RESET%
-echo %CYAN%╚══════════════════════════════════════════════════╝%RESET%
+echo %CYAN%╚════════════════════════════════════════════════╝%RESET%
 echo.
 
-REM Set error handling
 set ERROR_COUNT=0
 set WARNING_COUNT=0
 
-REM Check if Python is installed
 where python >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo %RED%[ERROR] Python is not installed or not in PATH.%RESET%
@@ -31,7 +27,6 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-REM Check Python version
 python -c "import sys; print(sys.version_info.major, sys.version_info.minor)" > temp_version.txt
 set /p PYTHON_VERSION=<temp_version.txt
 del temp_version.txt
@@ -55,7 +50,6 @@ if %PYTHON_MAJOR% EQU 3 (
 )
 echo %GREEN%[OK] Python %PYTHON_MAJOR%.%PYTHON_MINOR% detected.%RESET%
 
-REM Check if Node.js is installed
 where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo %RED%[ERROR] Node.js is not installed or not in PATH.%RESET%
@@ -64,13 +58,11 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-REM Check Node.js version
 node -v > temp_version.txt
 set /p NODE_VERSION=<temp_version.txt
 del temp_version.txt
 echo %GREEN%[OK] Node.js %NODE_VERSION% detected.%RESET%
 
-REM Check if npm is installed
 where npm >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo %RED%[ERROR] npm is not installed or not in PATH.%RESET%
@@ -80,7 +72,6 @@ if %ERRORLEVEL% NEQ 0 (
 )
 echo %GREEN%[OK] npm detected.%RESET%
 
-REM Check if Git is installed
 where git >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo %RED%[ERROR] Git is not installed or not in PATH.%RESET%
@@ -90,19 +81,16 @@ if %ERRORLEVEL% NEQ 0 (
 )
 echo %GREEN%[OK] Git detected.%RESET%
 
-REM Check if we're in a git repository
 if not exist .git (
     echo %RED%[ERROR] Not in a Git repository. Please run this script from the GitEvents directory.%RESET%
     pause
     exit /b 1
 )
 
-REM Check if .env file exists, if not create with interactive prompts
 if not exist .env (
     echo %CYAN%Creating .env file...%RESET%
     echo # GitEvents Environment Configuration > .env
     
-    REM GitHub Configuration
     echo.
     echo %CYAN%===================================
     echo GitHub Configuration
@@ -126,7 +114,6 @@ if not exist .env (
     )
     echo GITHUB_WEBHOOK_SECRET=!GITHUB_WEBHOOK_SECRET! >> .env
     
-    REM Database Configuration
     echo.
     echo %CYAN%===================================
     echo Database Configuration
@@ -167,7 +154,6 @@ if not exist .env (
         echo %GREEN%[OK] SQLite database configuration set.%RESET%
     )
     
-    REM API Configuration
     echo.
     echo %CYAN%===================================
     echo API Configuration
@@ -181,7 +167,6 @@ if not exist .env (
     if "!WEBHOOK_PORT!"=="" set WEBHOOK_PORT=8002
     echo WEBHOOK_PORT=!WEBHOOK_PORT! >> .env
     
-    REM Frontend Configuration
     echo.
     echo %CYAN%===================================
     echo Frontend Configuration
@@ -191,7 +176,6 @@ if not exist .env (
     if "!REACT_APP_API_URL!"=="" set REACT_APP_API_URL=http://localhost:8001/api
     echo REACT_APP_API_URL=!REACT_APP_API_URL! >> .env
     
-    REM Ngrok Configuration
     echo.
     echo %CYAN%===================================
     echo Ngrok Configuration (Optional)
@@ -208,7 +192,6 @@ if not exist .env (
         echo NGROK_AUTH_TOKEN=your_ngrok_auth_token_here >> .env
     )
     
-    REM Windows-specific Configuration
     echo.
     echo %CYAN%===================================
     echo Windows Configuration
@@ -223,7 +206,6 @@ if not exist .env (
 ) else (
     echo %YELLOW%[INFO] .env file already exists. Checking configuration...%RESET%
     
-    REM Check if essential variables are set in .env
     set MISSING_VARS=0
     
     findstr /C:"GITHUB_TOKEN=your_github_token_here" .env >nul 2>&1
@@ -253,13 +235,11 @@ if not exist .env (
     )
 )
 
-REM Create data directory if it doesn't exist
 if not exist data (
     mkdir data
     echo %GREEN%[OK] Created data directory.%RESET%
 )
 
-REM Create Python virtual environment
 echo %CYAN%Creating Python virtual environment...%RESET%
 if exist venv (
     echo %YELLOW%[INFO] Virtual environment already exists. Skipping creation.%RESET%
@@ -274,7 +254,6 @@ if exist venv (
     )
 )
 
-REM Activate virtual environment
 echo %CYAN%Activating virtual environment...%RESET%
 call venv\Scripts\activate.bat
 if %ERRORLEVEL% NEQ 0 (
@@ -284,7 +263,6 @@ if %ERRORLEVEL% NEQ 0 (
     echo %GREEN%[OK] Virtual environment activated.%RESET%
 )
 
-REM Install Python dependencies with retry mechanism
 echo %CYAN%Installing Python dependencies...%RESET%
 set RETRY_COUNT=0
 :RETRY_PIP
@@ -304,7 +282,97 @@ if %ERRORLEVEL% NEQ 0 (
     echo %GREEN%[OK] Python dependencies installed successfully.%RESET%
 )
 
-REM Install Node.js dependencies with retry mechanism
+echo %CYAN%Ensuring React app directories exist...%RESET%
+if not exist src (
+    mkdir src
+    echo %GREEN%[OK] Created src directory.%RESET%
+)
+
+if not exist src\components (
+    mkdir src\components
+    echo %GREEN%[OK] Created src\components directory.%RESET%
+)
+
+if not exist src\components\dashboard (
+    mkdir src\components\dashboard
+    echo %GREEN%[OK] Created src\components\dashboard directory.%RESET%
+)
+
+if not exist public (
+    mkdir public
+    echo %GREEN%[OK] Created public directory.%RESET%
+)
+
+if not exist public\index.html (
+    echo %CYAN%Creating public\index.html...%RESET%
+    echo ^<!DOCTYPE html^> > public\index.html
+    echo ^<html lang="en"^> >> public\index.html
+    echo   ^<head^> >> public\index.html
+    echo     ^<meta charset="utf-8" /^> >> public\index.html
+    echo     ^<link rel="icon" href="%PUBLIC_URL%/favicon.ico" /^> >> public\index.html
+    echo     ^<meta name="viewport" content="width=device-width, initial-scale=1" /^> >> public\index.html
+    echo     ^<meta name="theme-color" content="#000000" /^> >> public\index.html
+    echo     ^<meta name="description" content="GitHub Events Dashboard" /^> >> public\index.html
+    echo     ^<title^>GitHub Events Dashboard^</title^> >> public\index.html
+    echo   ^</head^> >> public\index.html
+    echo   ^<body^> >> public\index.html
+    echo     ^<noscript^>You need to enable JavaScript to run this app.^</noscript^> >> public\index.html
+    echo     ^<div id="root"^>^</div^> >> public\index.html
+    echo   ^</body^> >> public\index.html
+    echo ^</html^> >> public\index.html
+    echo %GREEN%[OK] Created public\index.html file.%RESET%
+)
+
+if not exist src\index.js (
+    echo %CYAN%Creating src\index.js...%RESET%
+    echo import React from 'react'; > src\index.js
+    echo import ReactDOM from 'react-dom/client'; >> src\index.js
+    echo import './index.css'; >> src\index.js
+    echo import GitHubEventsDashboard from './components/dashboard/GitHubEventsDashboard'; >> src\index.js
+    echo. >> src\index.js
+    echo const root = ReactDOM.createRoot(document.getElementById('root')); >> src\index.js
+    echo root.render( >> src\index.js
+    echo   ^<React.StrictMode^> >> src\index.js
+    echo     ^<GitHubEventsDashboard /^> >> src\index.js
+    echo   ^</React.StrictMode^> >> src\index.js
+    echo ); >> src\index.js
+    echo %GREEN%[OK] Created src\index.js file.%RESET%
+)
+
+if not exist src\index.css (
+    echo %CYAN%Creating src\index.css...%RESET%
+    echo @tailwind base; > src\index.css
+    echo @tailwind components; >> src\index.css
+    echo @tailwind utilities; >> src\index.css
+    echo. >> src\index.css
+    echo body { >> src\index.css
+    echo   margin: 0; >> src\index.css
+    echo   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', >> src\index.css
+    echo     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', >> src\index.css
+    echo     sans-serif; >> src\index.css
+    echo   -webkit-font-smoothing: antialiased; >> src\index.css
+    echo   -moz-osx-font-smoothing: grayscale; >> src\index.css
+    echo   background-color: #f3f4f6; >> src\index.css
+    echo } >> src\index.css
+    echo. >> src\index.css
+    echo code { >> src\index.css
+    echo   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', >> src\index.css
+    echo     monospace; >> src\index.css
+    echo } >> src\index.css
+    echo %GREEN%[OK] Created src\index.css file.%RESET%
+)
+
+if exist dashboard\*.jsx (
+    echo %CYAN%Copying dashboard components to src\components\dashboard...%RESET%
+    copy dashboard\*.jsx src\components\dashboard\
+    if %ERRORLEVEL% NEQ 0 (
+        echo %RED%[ERROR] Failed to copy dashboard components.%RESET%
+        set /a ERROR_COUNT+=1
+    ) else (
+        echo %GREEN%[OK] Dashboard components copied.%RESET%
+    )
+)
+
 echo %CYAN%Installing Node.js dependencies...%RESET%
 set RETRY_COUNT=0
 :RETRY_NPM
@@ -324,7 +392,6 @@ if %ERRORLEVEL% NEQ 0 (
     echo %GREEN%[OK] Node.js dependencies installed successfully.%RESET%
 )
 
-REM Fix npm vulnerabilities
 echo %CYAN%Fixing npm vulnerabilities...%RESET%
 call npm audit fix --force
 if %ERRORLEVEL% NEQ 0 (
@@ -335,27 +402,12 @@ if %ERRORLEVEL% NEQ 0 (
     echo %GREEN%[OK] npm vulnerabilities fixed.%RESET%
 )
 
-REM Fix the postinstall.js script to use the correct import path
 echo %CYAN%Checking and fixing React component imports...%RESET%
 if exist scripts\postinstall.js (
     powershell -Command "(Get-Content scripts\postinstall.js) -replace 'import GitHubEventsDashboard from ''\.\.\/dashboard\/GitHubEventsDashboard'';', 'import GitHubEventsDashboard from ''\.\/components\/dashboard\/GitHubEventsDashboard'';' | Set-Content scripts\postinstall.js"
     echo %GREEN%[OK] Fixed component import paths.%RESET%
 )
 
-REM Ensure src/components/dashboard directory exists
-if not exist src\components\dashboard (
-    mkdir src\components\dashboard
-    echo %GREEN%[OK] Created src\components\dashboard directory.%RESET%
-)
-
-REM Copy dashboard components if they exist in the dashboard directory
-if exist dashboard\*.jsx (
-    echo %CYAN%Copying dashboard components to src\components\dashboard...%RESET%
-    copy dashboard\*.jsx src\components\dashboard\
-    echo %GREEN%[OK] Dashboard components copied.%RESET%
-)
-
-REM Check if database exists, if not create it
 set DB_TYPE=sqlite
 findstr /C:"DB_TYPE=mysql" .env >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
@@ -373,6 +425,8 @@ if "%DB_TYPE%"=="sqlite" (
         python -c "from db.db_manager import DatabaseManager; db = DatabaseManager('!DB_PATH!'); db.initialize_database()"
         if %ERRORLEVEL% NEQ 0 (
             echo %RED%[ERROR] Failed to initialize database.%RESET%
+            echo This could be due to missing Python modules or incorrect database configuration.
+            echo Please check your Python installation and requirements.txt file.
             set /a ERROR_COUNT+=1
         ) else (
             echo %GREEN%[OK] Database initialized.%RESET%
@@ -416,7 +470,6 @@ if "%DB_TYPE%"=="sqlite" (
     )
 )
 
-REM Check if there are any errors
 if %ERROR_COUNT% GTR 0 (
     echo.
     echo %RED%[CRITICAL] There were %ERROR_COUNT% errors during deployment.%RESET%
@@ -426,7 +479,6 @@ if %ERROR_COUNT% GTR 0 (
     exit /b 1
 )
 
-REM Check if there are any warnings
 if %WARNING_COUNT% GTR 0 (
     echo.
     echo %YELLOW%[WARNING] There were %WARNING_COUNT% warnings during deployment.%RESET%
@@ -440,7 +492,6 @@ if %WARNING_COUNT% GTR 0 (
     )
 )
 
-REM Start backend server in a new window
 echo %CYAN%Starting backend server...%RESET%
 start "GitEvents Backend" cmd /c "cd /d "%~dp0" && color 0A && echo GitEvents Backend Server && echo. && call venv\Scripts\activate.bat && python main.py"
 if %ERRORLEVEL% NEQ 0 (
@@ -449,11 +500,9 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-REM Wait a moment for the backend to start
 echo %CYAN%Waiting for backend to start...%RESET%
 timeout /t 5 /nobreak > nul
 
-REM Start frontend server
 echo %CYAN%Starting frontend server...%RESET%
 start "GitEvents Frontend" cmd /c "cd /d "%~dp0" && color 0B && echo GitEvents Frontend Server && echo. && npm start"
 if %ERRORLEVEL% NEQ 0 (
@@ -462,7 +511,6 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-REM Check if browser should be opened automatically
 findstr /C:"OPEN_BROWSER=true" .env >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     echo %CYAN%Opening browser...%RESET%
@@ -471,9 +519,9 @@ if %ERRORLEVEL% EQU 0 (
 )
 
 echo.
-echo %GREEN%╔══════════════════════════════════════════════════╗%RESET%
+echo %GREEN%╔════════════════════════════════════════════════╗%RESET%
 echo %GREEN%║  GitEvents Deployment Complete!                  ║%RESET%
-echo %GREEN%╚══════════════════════════════════════════════════╝%RESET%
+echo %GREEN%╚════════════════════════════════════════════════╝%RESET%
 echo.
 echo %GREEN%[SUCCESS] GitEvents is now running!%RESET%
 echo %CYAN%Backend: http://localhost:8001%RESET%
