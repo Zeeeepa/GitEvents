@@ -1,9 +1,10 @@
 import os
 import logging
 import json
+import sqlite3
 from typing import Dict, Any, List, Optional, Union, Tuple
 
-from sqlalchemy import create_engine, desc
+from sqlalchemy import create_engine, desc, inspect
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import SQLAlchemyError
@@ -67,6 +68,189 @@ class DatabaseManager:
         if not self.Session:
             raise RuntimeError("Database session factory not initialized")
         return self.Session()
+    
+    def get_db_info(self) -> Dict[str, Any]:
+        """Get information about the current database configuration"""
+        db_type = os.getenv("DB_TYPE", "sqlite").lower()
+        
+        info = {
+            "type": db_type,
+            "connection_status": "connected" if self.engine else "disconnected"
+        }
+        
+        if db_type == "sqlite":
+            info["path"] = self.db_path
+        else:  # MySQL
+            info["host"] = os.getenv("DB_HOST", "localhost")
+            info["port"] = os.getenv("DB_PORT", "3306")
+            info["name"] = os.getenv("DB_NAME", "github_events")
+            info["user"] = os.getenv("DB_USER", "root")
+            # Don't include password in the response for security reasons
+        
+        # Add table information
+        if self.engine:
+            try:
+                inspector = inspect(self.engine)
+                tables = inspector.get_table_names()
+                
+                table_info = []
+                for table in tables:
+                    columns = inspector.get_columns(table)
+                    row_count = None
+                    
+                    # Get row count for SQLite
+                    if db_type == "sqlite":
+                        try:
+                            with self.get_session() as session:
+                                result = session.execute(f"SELECT COUNT(*) FROM {table}")
+                                row_count = result.scalar()
+                        except Exception as e:
+                            logger.error(f"Error getting row count for table {table}: {e}")
+                    
+                    table_info.append({
+                        "name": table,
+                        "columns": len(columns),
+                        "rows": row_count
+                    })
+                
+                info["tables"] = table_info
+            except Exception as e:
+                logger.error(f"Error getting table information: {e}")
+                info["tables"] = []
+        
+        return info
+    
+    def test_connection(self, db_config: Dict[str, Any]) -> Dict[str, Any]:
+        """Test a database connection with the provided configuration"""
+        try:
+            db_type = db_config.get("type", "sqlite").lower()
+            
+            if db_type == "sqlite":
+                db_path = db_config.get("path", "github_events.db")
+                
+                # Test SQLite connection
+                if db_config.get("create_new", False):
+                    # Create directory if it doesn't exist
+                    db_dir = os.path.dirname(db_path)
+                    if db_dir and not os.path.exists(db_dir):
+                        os.makedirs(db_dir)
+                
+                # Test connection by creating a temporary engine
+                test_url = f"sqlite:///{db_path}"
+                test_engine = create_engine(test_url)
+                
+                # Try to connect
+                conn = test_engine.connect()
+                conn.close()
+                
+                return {
+                    "success": True,
+                    "message": f"Successfully connected to SQLite database at {db_path}"
+                }
+            else:  # MySQL
+                host = db_config.get("host", "localhost")
+                port = db_config.get("port", "3306")
+                name = db_config.get("name", "github_events")
+                user = db_config.get("user", "root")
+                password = db_config.get("password", "")
+                
+                # Test MySQL connection
+                test_url = f"mysql+pymysql://{user}:{password}@{host}:{port}/{name}"
+                test_engine = create_engine(test_url)
+                
+                # Try to connect
+                conn = test_engine.connect()
+                conn.close()
+                
+                return {
+                    "success": True,
+                    "message": f"Successfully connected to MySQL database at {host}:{port}/{name}"
+                }
+        except Exception as e:
+            logger.error(f"Error testing database connection: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to connect to database: {str(e)}"
+            }
+    
+    def update_db_config(self, db_config: Dict[str, Any]) -> Dict[str, Any]:
+        """Update the database configuration and reconnect"""
+        try:
+            db_type = db_config.get("type", "sqlite").lower()
+            
+            # Set environment variables for the new configuration
+            os.environ["DB_TYPE"] = db_type
+            
+            if db_type == "sqlite":
+                db_path = db_config.get("path", "github_events.db")
+                self.db_path = db_path
+                
+                # Create new database if requested
+                if db_config.get("create_new", False):
+                    # Create directory if it doesn't exist
+                    db_dir = os.path.dirname(db_path)
+                    if db_dir and not os.path.exists(db_dir):
+                        os.makedirs(db_dir)
+                    
+                    # Remove existing file if it exists
+                    if os.path.exists(db_path):
+                        os.remove(db_path)
+            else:  # MySQL
+                os.environ["DB_HOST"] = db_config.get("host", "localhost")
+                os.environ["DB_PORT"] = str(db_config.get("port", "3306"))
+                os.environ["DB_NAME"] = db_config.get("name", "github_events")
+                os.environ["DB_USER"] = db_config.get("user", "root")
+                os.environ["DB_PASSWORD"] = db_config.get("password", "")
+            
+            # Close existing connections
+            if self.engine:
+                self.engine.dispose()
+            
+            # Reinitialize the database
+            self._initialize_db()
+            
+            return {
+                "success": True,
+                "message": f"Database configuration updated successfully"
+            }
+        except Exception as e:
+            logger.error(f"Error updating database configuration: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to update database configuration: {str(e)}"
+            }
+    
+    def create_sqlite_db(self, db_path: str) -> Dict[str, Any]:
+        """Create a new SQLite database at the specified path"""
+        try:
+            # Create directory if it doesn't exist
+            db_dir = os.path.dirname(db_path)
+            if db_dir and not os.path.exists(db_dir):
+                os.makedirs(db_dir)
+            
+            # Create a new SQLite database
+            conn = sqlite3.connect(db_path)
+            conn.close()
+            
+            # Update the configuration to use the new database
+            result = self.update_db_config({
+                "type": "sqlite",
+                "path": db_path
+            })
+            
+            if result["success"]:
+                return {
+                    "success": True,
+                    "message": f"Created new SQLite database at {db_path}"
+                }
+            else:
+                return result
+        except Exception as e:
+            logger.error(f"Error creating SQLite database: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to create SQLite database: {str(e)}"
+            }
     
     def save_repository(self, repo_data: Dict[str, Any]) -> Repository:
         """Save repository information to the database"""

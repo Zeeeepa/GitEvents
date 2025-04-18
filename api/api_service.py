@@ -82,6 +82,16 @@ class SettingsResponse(BaseModel):
     projects: List[Dict[str, Any]]
     scripts: List[Dict[str, Any]]
 
+class DatabaseConfig(BaseModel):
+    type: str
+    path: Optional[str] = None
+    host: Optional[str] = None
+    port: Optional[str] = None
+    name: Optional[str] = None
+    user: Optional[str] = None
+    password: Optional[str] = None
+    create_new: Optional[bool] = False
+
 # Endpoints
 @app.get("/api/events/pr", response_model=List[PREventResponse])
 async def get_pr_events(limit: int = Query(10, ge=1, le=100)):
@@ -241,6 +251,53 @@ async def get_repositories():
             return result
     except Exception as e:
         logger.error(f"Error retrieving repositories: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Database management endpoints
+@app.get("/api/database/info")
+async def get_database_info():
+    """Get information about the current database configuration"""
+    try:
+        info = db_manager.get_db_info()
+        return info
+    except Exception as e:
+        logger.error(f"Error retrieving database info: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/database/test-connection")
+async def test_database_connection(db_config: DatabaseConfig):
+    """Test a database connection with the provided configuration"""
+    try:
+        result = db_manager.test_connection(db_config.dict(exclude_none=True))
+        return result
+    except Exception as e:
+        logger.error(f"Error testing database connection: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/database/update-config")
+async def update_database_config(db_config: DatabaseConfig):
+    """Update the database configuration"""
+    try:
+        result = db_manager.update_db_config(db_config.dict(exclude_none=True))
+        if result["success"]:
+            return result
+        else:
+            raise HTTPException(status_code=400, detail=result["message"])
+    except Exception as e:
+        logger.error(f"Error updating database configuration: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/database/create-sqlite")
+async def create_sqlite_database(db_path: str = Query(..., description="Path to the new SQLite database")):
+    """Create a new SQLite database"""
+    try:
+        result = db_manager.create_sqlite_db(db_path)
+        if result["success"]:
+            return result
+        else:
+            raise HTTPException(status_code=400, detail=result["message"])
+    except Exception as e:
+        logger.error(f"Error creating SQLite database: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Project and script management endpoints
