@@ -9,9 +9,10 @@ REM Set color codes for better visibility
 REM Windows CMD doesn't support ANSI color codes by default
 REM Removing ANSI color codes and using CMD color commands instead
 
-echo ===================================
-echo GitEvents - Installation and Startup
-echo ===================================
+echo %CYAN%╔════════════════════════════════════════════════════════╗%RESET%
+echo %CYAN%║  GitEvents - Installation and Startup            ║%RESET%
+echo %CYAN%╚════════════════════════════════════════════════════════╝%RESET%
+
 echo.
 
 REM Set error handling
@@ -380,6 +381,7 @@ if %ERRORLEVEL% NEQ 0 (
     echo [OK] npm vulnerabilities fixed.
 )
 
+
 REM Fix the postinstall.js script to use the correct import path
 color 0B
 echo Checking and fixing React component imports...
@@ -542,10 +544,10 @@ if %ERRORLEVEL% EQU 0 (
 )
 
 echo.
-color 0A
-echo ===================================
-echo GitEvents Deployment Complete!
-echo ===================================
+echo %GREEN%╔════════════════════════════════════════════════════════╗%RESET%
+echo %GREEN%║  GitEvents Deployment Complete!                  ║%RESET%
+echo %GREEN%╚════════════════════════════════════════════════════════╝%RESET%
+
 echo.
 echo [SUCCESS] GitEvents is now running!
 color 0B
