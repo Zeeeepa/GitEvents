@@ -12,14 +12,25 @@ set "RED=[91m"
 set "CYAN=[96m"
 set "RESET=[0m"
 
-echo %CYAN%╔══════════════════════════════════════════════════╗%RESET%
-echo %CYAN%║  GitEvents - Installation and Startup            ║%RESET%
-echo %CYAN%╚══════════════════════════════════════════════════╝%RESET%
+REM Add error handling to prevent instant closing
+echo %CYAN%Starting GitEvents installation script...%RESET%
+echo If this window closes immediately, there might be an error with the script.
 echo.
 
-REM Set error handling
+REM Try to create a simple log file to help diagnose issues
+echo Script started at %date% %time% > install_log.txt
+
+echo %CYAN%╔══════════════════════════════════════════════╗%RESET%
+echo %CYAN%║  GitEvents - Installation and Startup            ║%RESET%
+echo %CYAN%╚══════════════════════════════════════════════╝%RESET%
+echo.
+
+REM Set error handling with global error catching
 set ERROR_COUNT=0
 set WARNING_COUNT=0
+
+REM Add global error handling
+if not defined ERRORLEVEL set ERRORLEVEL=0
 
 REM Check if Python is installed
 where python >nul 2>nul
@@ -27,6 +38,7 @@ if %ERRORLEVEL% NEQ 0 (
     echo %RED%[ERROR] Python is not installed or not in PATH.%RESET%
     echo Please install Python from https://www.python.org/downloads/
     echo Make sure to check "Add Python to PATH" during installation.
+    echo [ERROR] Python not found >> install_log.txt
     pause
     exit /b 1
 )
@@ -42,6 +54,7 @@ for /f "tokens=1,2" %%a in ("%PYTHON_VERSION%") do (
 if %PYTHON_MAJOR% LSS 3 (
     echo %RED%[ERROR] Python version 3.6+ is required, but found version %PYTHON_MAJOR%.%PYTHON_MINOR%%RESET%
     echo Please install a newer version of Python.
+    echo [ERROR] Python version too old: %PYTHON_MAJOR%.%PYTHON_MINOR% >> install_log.txt
     pause
     exit /b 1
 )
@@ -49,17 +62,20 @@ if %PYTHON_MAJOR% EQU 3 (
     if %PYTHON_MINOR% LSS 6 (
         echo %RED%[ERROR] Python version 3.6+ is required, but found version %PYTHON_MAJOR%.%PYTHON_MINOR%%RESET%
         echo Please install a newer version of Python.
+        echo [ERROR] Python version too old: %PYTHON_MAJOR%.%PYTHON_MINOR% >> install_log.txt
         pause
         exit /b 1
     )
 )
 echo %GREEN%[OK] Python %PYTHON_MAJOR%.%PYTHON_MINOR% detected.%RESET%
+echo [OK] Python %PYTHON_MAJOR%.%PYTHON_MINOR% detected >> install_log.txt
 
 REM Check if Node.js is installed
 where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo %RED%[ERROR] Node.js is not installed or not in PATH.%RESET%
     echo Please install Node.js from https://nodejs.org/
+    echo [ERROR] Node.js not found >> install_log.txt
     pause
     exit /b 1
 )
@@ -69,30 +85,36 @@ node -v > temp_version.txt
 set /p NODE_VERSION=<temp_version.txt
 del temp_version.txt
 echo %GREEN%[OK] Node.js %NODE_VERSION% detected.%RESET%
+echo [OK] Node.js %NODE_VERSION% detected >> install_log.txt
 
 REM Check if npm is installed
 where npm >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo %RED%[ERROR] npm is not installed or not in PATH.%RESET%
     echo Please reinstall Node.js from https://nodejs.org/
+    echo [ERROR] npm not found >> install_log.txt
     pause
     exit /b 1
 )
 echo %GREEN%[OK] npm detected.%RESET%
+echo [OK] npm detected >> install_log.txt
 
 REM Check if Git is installed
 where git >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo %RED%[ERROR] Git is not installed or not in PATH.%RESET%
     echo Please install Git from https://git-scm.com/downloads
+    echo [ERROR] Git not found >> install_log.txt
     pause
     exit /b 1
 )
 echo %GREEN%[OK] Git detected.%RESET%
+echo [OK] Git detected >> install_log.txt
 
 REM Check if we're in a git repository
 if not exist .git (
     echo %RED%[ERROR] Not in a Git repository. Please run this script from the GitEvents directory.%RESET%
+    echo [ERROR] Not in a Git repository >> install_log.txt
     pause
     exit /b 1
 )
@@ -471,9 +493,9 @@ if %ERRORLEVEL% EQU 0 (
 )
 
 echo.
-echo %GREEN%╔══════════════════════════════════════════════════╗%RESET%
+echo %GREEN%╔══════════════════════════════════════════════╗%RESET%
 echo %GREEN%║  GitEvents Deployment Complete!                  ║%RESET%
-echo %GREEN%╚══════════════════════════════════════════════════╝%RESET%
+echo %GREEN%╚══════════════════════════════════════════════╝%RESET%
 echo.
 echo %GREEN%[SUCCESS] GitEvents is now running!%RESET%
 echo %CYAN%Backend: http://localhost:8001%RESET%
@@ -481,3 +503,14 @@ echo %CYAN%Frontend: http://localhost:3000%RESET%
 echo.
 echo %YELLOW%Press any key to close this window. The servers will continue running.%RESET%
 pause > nul
+
+REM Add a final failsafe to prevent the window from closing if there's an error
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo %RED%[ERROR] An error occurred during script execution.%RESET%
+    echo Please check the install_log.txt file for details.
+    echo Error code: %ERRORLEVEL%
+    echo.
+    echo %YELLOW%Press any key to exit...%RESET%
+    pause > nul
+)
