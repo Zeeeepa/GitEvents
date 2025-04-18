@@ -14,7 +14,6 @@ const path = require('path');
 const { execSync } = require('child_process');
 const os = require('os');
 
-// ANSI color codes for better console output
 const colors = {
   reset: '\x1b[0m',
   red: '\x1b[31m',
@@ -28,9 +27,8 @@ const colors = {
 
 console.log(`${colors.cyan}\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557${colors.reset}`);
 console.log(`${colors.cyan}\u2551  GitEvents - Post-Installation Setup        \u2551${colors.reset}`);
-console.log(`${colors.cyan}\u255a\u2550\ufffd\ufffd\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d${colors.reset}`);
+console.log(`${colors.cyan}\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d${colors.reset}`);
 
-// Function to safely execute commands with error handling
 function safeExec(command, errorMessage) {
   try {
     console.log(`${colors.blue}> ${command}${colors.reset}`);
@@ -39,18 +37,15 @@ function safeExec(command, errorMessage) {
     console.error(`${colors.red}ERROR: ${errorMessage}${colors.reset}`);
     console.error(`${colors.yellow}Command failed: ${command}${colors.reset}`);
     console.error(`${colors.yellow}You may need to run this command manually.${colors.reset}`);
-    // Don't exit - continue with other fixes
     return null;
   }
 }
 
-// Function to check if a package has vulnerabilities
 function hasVulnerabilities(packageName) {
   try {
     const output = execSync(`npm audit --json`, { encoding: 'utf8' });
     const auditData = JSON.parse(output);
     
-    // Check if vulnerabilities exist for the specified package
     if (auditData.vulnerabilities && auditData.vulnerabilities[packageName]) {
       return true;
     }
@@ -62,27 +57,22 @@ function hasVulnerabilities(packageName) {
   }
 }
 
-// Fix known vulnerabilities
 console.log(`\n${colors.green}Checking for and fixing known vulnerabilities...${colors.reset}`);
 
-// Check and fix nth-check vulnerability
 if (hasVulnerabilities('nth-check')) {
   console.log(`${colors.yellow}Detected vulnerability in nth-check. Attempting to fix...${colors.reset}`);
   safeExec('npm install nth-check@2.1.1 --save-dev', 'Failed to update nth-check');
 }
 
-// Check and fix postcss vulnerability
 if (hasVulnerabilities('postcss')) {
   console.log(`${colors.yellow}Detected vulnerability in postcss. Attempting to fix...${colors.reset}`);
   safeExec('npm install postcss@8.4.31 --save-dev', 'Failed to update postcss');
 }
 
-// Platform-specific setup
 const isWindows = os.platform() === 'win32';
 if (isWindows) {
   console.log(`\n${colors.green}Setting up Windows-specific configurations...${colors.reset}`);
   
-  // Create .env file if it doesn't exist
   const envPath = path.join(process.cwd(), '.env');
   if (!fs.existsSync(envPath)) {
     console.log(`${colors.blue}Creating default .env file...${colors.reset}`);
@@ -98,17 +88,14 @@ API_PORT=8001
   }
 }
 
-// Ensure proper React setup
 console.log(`\n${colors.green}Ensuring proper React setup...${colors.reset}`);
 
-// Create src directory if it doesn't exist
 const srcDir = path.join(process.cwd(), 'src');
 if (!fs.existsSync(srcDir)) {
   fs.mkdirSync(srcDir, { recursive: true });
   console.log(`${colors.green}Created src directory${colors.reset}`);
 }
 
-// Create index.js if it doesn't exist
 const indexPath = path.join(srcDir, 'index.js');
 if (!fs.existsSync(indexPath)) {
   console.log(`${colors.blue}Creating default src/index.js file...${colors.reset}`);
@@ -129,7 +116,6 @@ root.render(
   console.log(`${colors.green}Created src/index.js file${colors.reset}`);
 }
 
-// Create index.css if it doesn't exist
 const cssPath = path.join(srcDir, 'index.css');
 if (!fs.existsSync(cssPath)) {
   console.log(`${colors.blue}Creating default src/index.css file...${colors.reset}`);
@@ -157,13 +143,11 @@ code {
   console.log(`${colors.green}Created src/index.css file${colors.reset}`);
 }
 
-// Create public directory and index.html if they don't exist
 const publicDir = path.join(process.cwd(), 'public');
 if (!fs.existsSync(publicDir)) {
   fs.mkdirSync(publicDir, { recursive: true });
   console.log(`${colors.green}Created public directory${colors.reset}`);
   
-  // Create index.html
   const htmlPath = path.join(publicDir, 'index.html');
   const defaultHtml = 
 `<!DOCTYPE html>
@@ -186,20 +170,17 @@ if (!fs.existsSync(publicDir)) {
   console.log(`${colors.green}Created public/index.html file${colors.reset}`);
 }
 
-// Create data directory if it doesn't exist
 const dataDir = path.join(process.cwd(), 'data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
   console.log(`${colors.green}Created data directory${colors.reset}`);
 }
 
-// Ensure components directory structure exists
 const componentsDir = path.join(srcDir, 'components', 'dashboard');
 if (!fs.existsSync(componentsDir)) {
   fs.mkdirSync(componentsDir, { recursive: true });
   console.log(`${colors.green}Created src/components/dashboard directory${colors.reset}`);
   
-  // Copy dashboard components if they exist in the dashboard directory
   const dashboardDir = path.join(process.cwd(), 'dashboard');
   if (fs.existsSync(dashboardDir)) {
     try {
