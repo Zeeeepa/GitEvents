@@ -6,15 +6,13 @@ REM Set the working directory to the script's location
 cd /d "%~dp0"
 
 REM Set color codes for better visibility
-set "GREEN=[92m"
-set "YELLOW=[93m"
-set "RED=[91m"
-set "CYAN=[96m"
-set "RESET=[0m"
+REM Windows CMD doesn't support ANSI color codes by default
+REM Using simple ASCII characters instead of Unicode box-drawing characters
 
-echo %CYAN%╔════════════════════════════════════════════════╗%RESET%
-echo %CYAN%║  GitEvents - Installation and Startup            ║%RESET%
-echo %CYAN%╚════════════════════════════════════════════════╝%RESET%
+echo +--------------------------------------------------+
+echo ^|  GitEvents - Installation and Startup            ^|
+echo +--------------------------------------------------+
+
 echo.
 
 REM Set error handling
@@ -436,6 +434,7 @@ echo %CYAN%Checking and fixing React component imports...%RESET%
 if exist scripts\postinstall.js (
     powershell -Command "(Get-Content scripts\postinstall.js) -replace 'import GitHubEventsDashboard from ''\.\.\/dashboard\/GitHubEventsDashboard'';', 'import GitHubEventsDashboard from ''\.\/components\/dashboard\/GitHubEventsDashboard'';' | Set-Content scripts\postinstall.js"
     echo %GREEN%[OK] Fixed component import paths.%RESET%
+
 )
 
 REM Check if database exists, if not create it
@@ -528,6 +527,7 @@ if %WARNING_COUNT% GTR 0 (
 REM Start backend server in a new window
 echo %CYAN%Starting backend server...%RESET%
 start "GitEvents Backend" cmd /c "cd /d "%~dp0" && color 0A && echo GitEvents Backend Server && echo. && call venv\Scripts\activate.bat && python main.py"
+
 if %ERRORLEVEL% NEQ 0 (
     echo %RED%[ERROR] Failed to start backend server.%RESET%
     pause
@@ -541,6 +541,7 @@ timeout /t 5 /nobreak > nul
 REM Start frontend server
 echo %CYAN%Starting frontend server...%RESET%
 start "GitEvents Frontend" cmd /c "cd /d "%~dp0" && color 0B && echo GitEvents Frontend Server && echo. && npm start"
+
 if %ERRORLEVEL% NEQ 0 (
     echo %RED%[ERROR] Failed to start frontend server.%RESET%
     pause
@@ -559,6 +560,7 @@ echo.
 echo %GREEN%╔════════════════════════════════════════════════╗%RESET%
 echo %GREEN%║  GitEvents Deployment Complete!                  ║%RESET%
 echo %GREEN%╚════════════════════════════════════════════════╝%RESET%
+
 echo.
 echo %GREEN%[SUCCESS] GitEvents is now running!%RESET%
 echo %CYAN%Backend: http://localhost:8001%RESET%
