@@ -5,9 +5,7 @@ color 0A
 REM Set the working directory to the script's location
 cd /d "%~dp0"
 
-REM Windows CMD doesn't support ANSI color codes by default
 REM Using simple ASCII characters instead of Unicode box-drawing characters
-
 echo +--------------------------------------------------+
 echo ^|  GitEvents - Update, Clean                      ^|
 echo +--------------------------------------------------+
