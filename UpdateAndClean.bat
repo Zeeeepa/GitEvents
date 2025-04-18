@@ -9,7 +9,7 @@ REM Windows CMD doesn't support ANSI color codes by default
 REM Using simple ASCII characters instead of Unicode box-drawing characters
 
 echo +--------------------------------------------------+
-echo ^|  GitEvents - Update, Clean & Refresh             ^|
+echo ^|  GitEvents - Update, Clean                      ^|
 echo +--------------------------------------------------+
 echo.
 
