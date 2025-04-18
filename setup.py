@@ -80,7 +80,44 @@ def create_directories():
     
     return True
 
-def initialize_database():
+def test_database_connection(db_config):
+    """Test database connection with provided configuration"""
+    print("Testing database connection...")
+    try:
+        # Import here to ensure dependencies are installed first
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        from db.db_manager import DatabaseManager
+        
+        db_type = db_config.get("DB_TYPE", "SQLite")
+        
+        if db_type.lower() == "sqlite":
+            db_path = db_config.get("GITHUB_EVENTS_DB", "github_events.db")
+            db_manager = DatabaseManager(db_path)
+            result = db_manager.test_connection()
+        else:  # MySQL
+            db_manager = DatabaseManager(
+                db_name=db_config.get("DB_NAME", "github_events"),
+                db_type="mysql",
+                db_host=db_config.get("DB_HOST", "localhost"),
+                db_port=int(db_config.get("DB_PORT", 3306)),
+                db_user=db_config.get("DB_USER", "admin"),
+                db_password=db_config.get("DB_PASSWORD", "password")
+            )
+            result = db_manager.test_connection()
+        
+        if result["success"]:
+            print(f"OK: Database connection successful: {result['message']}")
+            return True
+        else:
+            print(f"ERROR: Failed to connect to database: {result['message']}")
+            return False
+    except Exception as e:
+        print(f"ERROR: Failed to test database connection: {e}")
+        return False
+
+def initialize_database(db_config):
     """Initialize the database"""
     print("Initializing database...")
     try:
@@ -90,9 +127,22 @@ def initialize_database():
         
         from db.db_manager import DatabaseManager
         
-        db_path = os.getenv("GITHUB_EVENTS_DB", "github_events.db")
-        db_manager = DatabaseManager(db_path)
-        result = db_manager.initialize_database()
+        db_type = db_config.get("DB_TYPE", "SQLite")
+        
+        if db_type.lower() == "sqlite":
+            db_path = db_config.get("GITHUB_EVENTS_DB", "github_events.db")
+            db_manager = DatabaseManager(db_path)
+            result = db_manager.initialize_database()
+        else:  # MySQL
+            db_manager = DatabaseManager(
+                db_name=db_config.get("DB_NAME", "github_events"),
+                db_type="mysql",
+                db_host=db_config.get("DB_HOST", "localhost"),
+                db_port=int(db_config.get("DB_PORT", 3306)),
+                db_user=db_config.get("DB_USER", "admin"),
+                db_password=db_config.get("DB_PASSWORD", "password")
+            )
+            result = db_manager.initialize_database()
         
         if result["success"]:
             print(f"OK: Database initialized successfully: {result['message']}")
@@ -115,11 +165,22 @@ def create_env_file():
     
     print("Creating default .env file...")
     default_env = """# GitEvents Environment Configuration
-GITHUB_TOKEN=your_github_token_here
-GITHUB_WEBHOOK_SECRET=your_webhook_secret_here
-GITHUB_EVENTS_DB=github_events.db
 API_PORT=8001
+REACT_APP_API_URL=http://localhost:8001/api
 WEBHOOK_PORT=8002
+
+GITHUB_TOKEN=your_github_token_here
+GITHUB_EVENTS_DB=github_events.db
+DB_TYPE=SQLite
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=github_events
+DB_USER=admin
+DB_PASSWORD=password
+
+ENABLE_NGROK=true
+NGROK_AUTH_TOKEN=your_ngrok_auth_token_here
+
 OPEN_BROWSER=true
 """
     
@@ -127,11 +188,41 @@ OPEN_BROWSER=true
         with open(env_file, "w") as f:
             f.write(default_env)
         print("OK: Created default .env file")
-        print("NOTE: You should update the GitHub token and webhook secret in the .env file")
+        print("NOTE: You should update the GitHub token and ngrok auth token in the .env file")
         return True
     except Exception as e:
         print(f"ERROR: Failed to create .env file: {e}")
         return False
+
+def load_env_config():
+    """Load configuration from .env file"""
+    print("Loading configuration from .env file...")
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        config = {
+            "API_PORT": os.getenv("API_PORT", "8001"),
+            "REACT_APP_API_URL": os.getenv("REACT_APP_API_URL", "http://localhost:8001/api"),
+            "WEBHOOK_PORT": os.getenv("WEBHOOK_PORT", "8002"),
+            "GITHUB_TOKEN": os.getenv("GITHUB_TOKEN", ""),
+            "GITHUB_EVENTS_DB": os.getenv("GITHUB_EVENTS_DB", "github_events.db"),
+            "DB_TYPE": os.getenv("DB_TYPE", "SQLite"),
+            "DB_HOST": os.getenv("DB_HOST", "localhost"),
+            "DB_PORT": os.getenv("DB_PORT", "3306"),
+            "DB_NAME": os.getenv("DB_NAME", "github_events"),
+            "DB_USER": os.getenv("DB_USER", "admin"),
+            "DB_PASSWORD": os.getenv("DB_PASSWORD", "password"),
+            "ENABLE_NGROK": os.getenv("ENABLE_NGROK", "true").lower() == "true",
+            "NGROK_AUTH_TOKEN": os.getenv("NGROK_AUTH_TOKEN", ""),
+            "OPEN_BROWSER": os.getenv("OPEN_BROWSER", "true").lower() == "true"
+        }
+        
+        print("OK: Configuration loaded successfully")
+        return config
+    except Exception as e:
+        print(f"ERROR: Failed to load configuration: {e}")
+        return {}
 
 def main():
     """Main setup function"""
@@ -155,13 +246,27 @@ def main():
         print("\nERROR: Failed to create .env file.")
         return False
     
+    # Load configuration from .env
+    config = load_env_config()
+    if not config:
+        print("\nERROR: Failed to load configuration.")
+        return False
+    
     # Install Python packages
     if not install_python_packages():
         print("\nERROR: Failed to install Python packages.")
         return False
     
+    # Test database connection
+    if not test_database_connection(config):
+        print("\nWARNING: Database connection test failed. You may need to update your database configuration.")
+        create_db = input("Would you like to create/initialize the database anyway? (y/n): ")
+        if create_db.lower() != 'y':
+            print("Setup aborted. Please update your database configuration in the .env file and try again.")
+            return False
+    
     # Initialize database
-    if not initialize_database():
+    if not initialize_database(config):
         print("\nERROR: Failed to initialize database.")
         return False
     
