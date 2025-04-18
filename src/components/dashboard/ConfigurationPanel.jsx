@@ -1,16 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001/api';
 
 const ConfigurationPanel = () => {
   const [githubToken, setGithubToken] = useState('');
-  const [webhookUrl, setWebhookUrl] = useState('');
-  const [webhookSecret, setWebhookSecret] = useState('');
-  const [dbPath, setDbPath] = useState('');
+  const [ngrokEnabled, setNgrokEnabled] = useState(true);
+  const [ngrokAuthToken, setNgrokAuthToken] = useState('');
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [config, setConfig] = useState({});
+
+  useEffect(() => {
+    // Fetch current configuration
+    fetchConfiguration();
+  }, []);
+
+  const fetchConfiguration = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/settings`);
+      const data = response.data;
+      
+      setGithubToken(data.github_token || '');
+      setNgrokEnabled(data.enable_ngrok || true);
+      setNgrokAuthToken(data.ngrok_auth_token || '');
+      setConfig(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching configuration:', err);
+      setError('Failed to load configuration. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSaveConfig = async (e) => {
     e.preventDefault();
@@ -20,11 +45,20 @@ const ConfigurationPanel = () => {
       setSuccessMessage(null);
       setError(null);
       
-      // In a real application, this would send the configuration to the backend
-      // For now, we'll just simulate a successful save
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const configData = {
+        github_token: githubToken,
+        enable_ngrok: ngrokEnabled,
+        ngrok_auth_token: ngrokAuthToken
+      };
       
-      setSuccessMessage('Configuration saved successfully!');
+      const response = await axios.post(`${API_BASE_URL}/settings`, configData);
+      
+      if (response.data.success) {
+        setSuccessMessage('Configuration saved successfully!');
+        await fetchConfiguration();
+      } else {
+        setError(response.data.message || 'Failed to save configuration.');
+      }
     } catch (err) {
       console.error('Error saving configuration:', err);
       setError('Failed to save configuration. Please try again later.');
@@ -39,6 +73,17 @@ const ConfigurationPanel = () => {
       }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="bg-white shadow rounded-lg p-6">
+        <h2 className="text-xl font-semibold mb-6">System Configuration</h2>
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
@@ -80,62 +125,44 @@ const ConfigurationPanel = () => {
           </div>
           
           <div>
-            <h3 className="text-lg font-medium mb-4">Webhook Configuration</h3>
+            <h3 className="text-lg font-medium mb-4">Ngrok Configuration</h3>
             
             <div className="mb-4">
-              <label htmlFor="webhook-url" className="block text-sm font-medium text-gray-700 mb-1">
-                Webhook URL
-              </label>
-              <input
-                type="text"
-                id="webhook-url"
-                value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="https://example.com/webhook"
-              />
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="enable-ngrok"
+                  checked={ngrokEnabled}
+                  onChange={(e) => setNgrokEnabled(e.target.checked)}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label htmlFor="enable-ngrok" className="ml-2 block text-sm text-gray-700">
+                  Enable Ngrok for webhook tunneling
+                </label>
+              </div>
               <p className="mt-1 text-xs text-gray-500">
-                URL where GitHub will send webhook events
+                Automatically creates a public URL for receiving GitHub webhooks
               </p>
             </div>
             
-            <div className="mb-4">
-              <label htmlFor="webhook-secret" className="block text-sm font-medium text-gray-700 mb-1">
-                Webhook Secret
-              </label>
-              <input
-                type="password"
-                id="webhook-secret"
-                value={webhookSecret}
-                onChange={(e) => setWebhookSecret(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="webhook_secret_key"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Secret key for webhook payload verification
-              </p>
-            </div>
-          </div>
-          
-          <div>
-            <h3 className="text-lg font-medium mb-4">Database Configuration</h3>
-            
-            <div className="mb-4">
-              <label htmlFor="db-path" className="block text-sm font-medium text-gray-700 mb-1">
-                Database Path
-              </label>
-              <input
-                type="text"
-                id="db-path"
-                value={dbPath}
-                onChange={(e) => setDbPath(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="/path/to/github_events.db"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Path to SQLite database file (leave empty for default)
-              </p>
-            </div>
+            {ngrokEnabled && (
+              <div className="mb-4">
+                <label htmlFor="ngrok-auth-token" className="block text-sm font-medium text-gray-700 mb-1">
+                  Ngrok Auth Token
+                </label>
+                <input
+                  type="password"
+                  id="ngrok-auth-token"
+                  value={ngrokAuthToken}
+                  onChange={(e) => setNgrokAuthToken(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="your_ngrok_auth_token"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Auth token from your Ngrok account (required for stable URLs)
+                </p>
+              </div>
+            )}
           </div>
           
           <div className="pt-4 border-t border-gray-200">
