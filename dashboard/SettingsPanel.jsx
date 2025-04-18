@@ -6,8 +6,10 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001/api
 const SettingsPanel = ({ onSettingsChanged }) => {
   const [settings, setSettings] = useState({
     notifications: { enabled: false },
-    auto_pr: { enabled: false, running: false },
-    post_merge_scripts: { enabled: false }
+    auto_pr: { enabled: false, running: false, add_comment: false, comment_text: '' },
+    post_merge_scripts: { enabled: false, selected_project: '', selected_script: '' },
+    projects: [],
+    scripts: []
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -36,6 +38,38 @@ const SettingsPanel = ({ onSettingsChanged }) => {
     setSettings(prevSettings => {
       const newSettings = { ...prevSettings };
       newSettings[settingKey].enabled = !newSettings[settingKey].enabled;
+      return newSettings;
+    });
+  };
+
+  const handlePRCommentToggle = () => {
+    setSettings(prevSettings => {
+      const newSettings = { ...prevSettings };
+      newSettings.auto_pr.add_comment = !newSettings.auto_pr.add_comment;
+      return newSettings;
+    });
+  };
+
+  const handleCommentTextChange = (e) => {
+    setSettings(prevSettings => {
+      const newSettings = { ...prevSettings };
+      newSettings.auto_pr.comment_text = e.target.value;
+      return newSettings;
+    });
+  };
+
+  const handleProjectChange = (e) => {
+    setSettings(prevSettings => {
+      const newSettings = { ...prevSettings };
+      newSettings.post_merge_scripts.selected_project = e.target.value;
+      return newSettings;
+    });
+  };
+
+  const handleScriptChange = (e) => {
+    setSettings(prevSettings => {
+      const newSettings = { ...prevSettings };
+      newSettings.post_merge_scripts.selected_script = e.target.value;
       return newSettings;
     });
   };
@@ -156,6 +190,39 @@ const SettingsPanel = ({ onSettingsChanged }) => {
             ></label>
           </div>
         </div>
+
+        {settings.auto_pr.enabled && (
+          <div className="ml-6 p-4 border-l-2 border-indigo-100">
+            <div className="flex items-center mb-3">
+              <input
+                type="checkbox"
+                id="toggle-pr-comment"
+                checked={settings.auto_pr.add_comment}
+                onChange={handlePRCommentToggle}
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <label htmlFor="toggle-pr-comment" className="ml-2 block text-sm text-gray-700">
+                Add Comment when PR is created
+              </label>
+            </div>
+            
+            {settings.auto_pr.add_comment && (
+              <div className="mt-2">
+                <label htmlFor="pr-comment-text" className="block text-sm font-medium text-gray-700">
+                  Comment Text
+                </label>
+                <textarea
+                  id="pr-comment-text"
+                  rows="3"
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  placeholder="Enter comment text to add to new PRs"
+                  value={settings.auto_pr.comment_text}
+                  onChange={handleCommentTextChange}
+                ></textarea>
+              </div>
+            )}
+          </div>
+        )}
         
         <div className="flex items-center justify-between">
           <div>
@@ -187,6 +254,45 @@ const SettingsPanel = ({ onSettingsChanged }) => {
             ></label>
           </div>
         </div>
+
+        {settings.post_merge_scripts.enabled && (
+          <div className="ml-6 p-4 border-l-2 border-indigo-100">
+            <div className="mb-3">
+              <label htmlFor="project-select" className="block text-sm font-medium text-gray-700">
+                Select Project
+              </label>
+              <select
+                id="project-select"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                value={settings.post_merge_scripts.selected_project}
+                onChange={handleProjectChange}
+              >
+                <option value="">Select a project</option>
+                {settings.projects && settings.projects.map((project, index) => (
+                  <option key={index} value={project.id}>{project.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="mb-3">
+              <label htmlFor="script-select" className="block text-sm font-medium text-gray-700">
+                Select Script
+              </label>
+              <select
+                id="script-select"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                value={settings.post_merge_scripts.selected_script}
+                onChange={handleScriptChange}
+                disabled={!settings.post_merge_scripts.selected_project}
+              >
+                <option value="">Select a script</option>
+                {settings.scripts && settings.scripts.map((script, index) => (
+                  <option key={index} value={script.id}>{script.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
         
         <div className="pt-4 border-t border-gray-200">
           <button

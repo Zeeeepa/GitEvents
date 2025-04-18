@@ -20,6 +20,7 @@ class AutoBranchPRManager:
     Features:
     1. Auto-create PRs for new branches
     2. Execute scripts after PR merges
+    3. Add comments to newly created PRs
     """
     
     def __init__(self, config_path: str = "auto_branch_pr_config.json"):
@@ -50,10 +51,15 @@ class AutoBranchPRManager:
                 "base_branch": "main",
                 "auto_assign_creator": True,
                 "excluded_branches": ["main", "master", "dev", "develop", "release", "hotfix"],
-                "included_repos": []
+                "included_repos": [],
+                "add_comment": False,
+                "comment_text": "This PR was automatically created by GitEvents."
             },
             "post_merge_scripts": {
                 "enabled": False,
+                "selected_project": "",
+                "selected_script": "",
+                "projects": [],
                 "scripts": []
             }
         }
@@ -152,11 +158,55 @@ class AutoBranchPRManager:
         """Get all configured post-merge scripts"""
         return self.config["post_merge_scripts"]["scripts"]
     
+    def get_projects(self) -> List[Dict[str, Any]]:
+        """Get all available projects"""
+        return self.config["post_merge_scripts"]["projects"]
+    
+    def add_project(self, project_name: str, project_id: str) -> bool:
+        """Add a new project"""
+        try:
+            # Check if project already exists
+            for project in self.config["post_merge_scripts"]["projects"]:
+                if project["id"] == project_id:
+                    logger.warning(f"Project with ID {project_id} already exists")
+                    return False
+            
+            new_project = {
+                "id": project_id,
+                "name": project_name,
+                "added_at": datetime.now().isoformat()
+            }
+            
+            self.config["post_merge_scripts"]["projects"].append(new_project)
+            logger.info(f"Added project: {project_name}")
+            return self.save_config()
+        except Exception as e:
+            logger.error(f"Error adding project: {e}")
+            return False
+    
     def execute_post_merge_script(self, repo_name: str, branch_name: str, pr_number: int) -> Tuple[bool, str]:
         """Execute appropriate post-merge script for a merged PR"""
         if not self.config["post_merge_scripts"]["enabled"]:
             return False, "Post-merge scripts are disabled"
         
+        # Check if a specific project and script are selected
+        selected_project = self.config["post_merge_scripts"]["selected_project"]
+        selected_script = self.config["post_merge_scripts"]["selected_script"]
+        
+        if selected_project and selected_script:
+            # Find the script by ID
+            script_to_run = None
+            for script in self.config["post_merge_scripts"]["scripts"]:
+                if script["id"] == selected_script:
+                    script_to_run = script
+                    break
+            
+            if script_to_run:
+                return self._run_script(script_to_run, repo_name, branch_name, pr_number)
+            else:
+                return False, f"Selected script ID {selected_script} not found"
+        
+        # If no specific script is selected, run all enabled scripts that match the repo
         for script in self.config["post_merge_scripts"]["scripts"]:
             if not script["enabled"]:
                 continue
@@ -171,49 +221,54 @@ class AutoBranchPRManager:
                 if not matches:
                     continue
             
-            # Execute the script with environment variables for context
-            script_path = script["script_path"]
-            project_name = script["project_name"]
-            
-            try:
-                # Set up environment variables for the script
-                env = os.environ.copy()
-                env["GITHUB_REPOSITORY"] = repo_name
-                env["GITHUB_BRANCH"] = branch_name
-                env["GITHUB_PR_NUMBER"] = str(pr_number)
-                env["GITHUB_PROJECT"] = project_name
-                
-                # Check script type and execute
-                if script_path.endswith(".py"):
-                    result = subprocess.run(
-                        ["python", script_path],
-                        env=env,
-                        capture_output=True,
-                        text=True
-                    )
-                elif script_path.endswith(".bat"):
-                    result = subprocess.run(
-                        [script_path],
-                        env=env,
-                        capture_output=True,
-                        text=True,
-                        shell=True
-                    )
-                else:
-                    logger.error(f"Unsupported script type: {script_path}")
-                    continue
-                
-                if result.returncode == 0:
-                    logger.info(f"Successfully executed post-merge script: {project_name}")
-                    return True, f"Script executed successfully: {project_name}"
-                else:
-                    logger.error(f"Script execution failed: {result.stderr}")
-                    return False, f"Script execution failed: {result.stderr}"
-            except Exception as e:
-                logger.error(f"Error executing post-merge script: {e}")
-                return False, f"Error executing script: {str(e)}"
+            success, message = self._run_script(script, repo_name, branch_name, pr_number)
+            if success:
+                return True, message
         
         return False, "No matching post-merge scripts found"
+    
+    def _run_script(self, script: Dict[str, Any], repo_name: str, branch_name: str, pr_number: int) -> Tuple[bool, str]:
+        """Run a specific script with the appropriate environment variables"""
+        script_path = script["script_path"]
+        project_name = script["project_name"]
+        
+        try:
+            # Set up environment variables for the script
+            env = os.environ.copy()
+            env["GITHUB_REPOSITORY"] = repo_name
+            env["GITHUB_BRANCH"] = branch_name
+            env["GITHUB_PR_NUMBER"] = str(pr_number)
+            env["GITHUB_PROJECT"] = project_name
+            
+            # Check script type and execute
+            if script_path.endswith(".py"):
+                result = subprocess.run(
+                    ["python", script_path],
+                    env=env,
+                    capture_output=True,
+                    text=True
+                )
+            elif script_path.endswith(".bat"):
+                result = subprocess.run(
+                    [script_path],
+                    env=env,
+                    capture_output=True,
+                    text=True,
+                    shell=True
+                )
+            else:
+                logger.error(f"Unsupported script type: {script_path}")
+                return False, f"Unsupported script type: {script_path}"
+            
+            if result.returncode == 0:
+                logger.info(f"Successfully executed post-merge script: {project_name}")
+                return True, f"Script executed successfully: {project_name}"
+            else:
+                logger.error(f"Script execution failed: {result.stderr}")
+                return False, f"Script execution failed: {result.stderr}"
+        except Exception as e:
+            logger.error(f"Error executing post-merge script: {e}")
+            return False, f"Error executing script: {str(e)}"
     
     def create_pull_request_for_branch(self, repo: Repository, branch_name: str) -> Optional[PullRequest]:
         """Create a pull request for a new branch"""
@@ -265,6 +320,14 @@ class AutoBranchPRManager:
             )
             
             logger.info(f"Created PR #{pr.number} for branch {branch_name} in {repo.full_name}")
+            
+            # Add comment if enabled
+            if self.config["auto_pr_settings"]["add_comment"]:
+                comment_text = self.config["auto_pr_settings"]["comment_text"]
+                if comment_text:
+                    pr.create_issue_comment(comment_text)
+                    logger.info(f"Added comment to PR #{pr.number}")
+            
             return pr
         except Exception as e:
             logger.error(f"Error creating PR for branch {branch_name}: {e}")
