@@ -2,6 +2,9 @@
 setlocal enabledelayedexpansion
 color 0A
 
+REM Set the working directory to the script's location
+cd /d "%~dp0"
+
 echo ===================================
 echo GitEvents - Upgrade, Clean & Re-Pull
 echo ===================================
@@ -167,7 +170,18 @@ echo GitEvents Upgrade Complete!
 echo ===================================
 echo.
 echo [SUCCESS] GitEvents has been upgraded successfully.
-echo To deploy and start the application, run FullDeployLocal^&Start.bat
+
+REM Ask if user wants to start the deploy script
 echo.
-echo Press any key to exit.
-pause > nul
+choice /C YN /M "Do you want to start the Deploy Script now?"
+if %ERRORLEVEL% EQU 1 (
+    echo.
+    echo Starting deployment script...
+    call FullDeployLocal^&Start.bat
+) else (
+    echo.
+    echo To deploy and start the application later, run FullDeployLocal^&Start.bat
+    echo.
+    echo Press any key to exit.
+    pause > nul
+)

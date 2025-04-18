@@ -214,8 +214,8 @@ if not exist .env (
     echo Windows Configuration
     echo ===================================
     
-    set /p OPEN_BROWSER=Automatically open browser when starting? (true/false, default: true): 
-    if "!OPEN_BROWSER!"=="" set OPEN_BROWSER=true
+    set /p OPEN_BROWSER=Automatically open browser when starting? (true/false, default: false): 
+    if "!OPEN_BROWSER!"=="" set OPEN_BROWSER=false
     echo OPEN_BROWSER=!OPEN_BROWSER! >> .env
     
     echo [OK] .env file created successfully.
@@ -340,26 +340,6 @@ if %ERRORLEVEL% NEQ 0 (
     echo [OK] npm vulnerabilities fixed.
 )
 
-REM Fix the postinstall.js script to use the correct import path
-echo Checking and fixing React component imports...
-if exist scripts\postinstall.js (
-    powershell -Command "(Get-Content scripts\postinstall.js) -replace 'import GitHubEventsDashboard from ''\.\.\/dashboard\/GitHubEventsDashboard'';', 'import GitHubEventsDashboard from ''\.\/components\/dashboard\/GitHubEventsDashboard'';' | Set-Content scripts\postinstall.js"
-    echo [OK] Fixed component import paths.
-)
-
-REM Ensure src/components/dashboard directory exists
-if not exist src\components\dashboard (
-    mkdir src\components\dashboard
-    echo [OK] Created src\components\dashboard directory.
-)
-
-REM Copy dashboard components if they exist in the dashboard directory
-if exist dashboard\*.jsx (
-    echo Copying dashboard components to src\components\dashboard...
-    copy dashboard\*.jsx src\components\dashboard\
-    echo [OK] Dashboard components copied.
-)
-
 REM Check if database exists, if not create it
 set DB_TYPE=sqlite
 findstr /C:"DB_TYPE=mysql" .env >nul 2>&1
@@ -451,6 +431,26 @@ if %WARNING_COUNT% GTR 0 (
     )
 )
 
+REM Fix the postinstall.js script to use the correct import path
+echo Checking and fixing React component imports...
+if exist scripts\postinstall.js (
+    powershell -Command "(Get-Content scripts\postinstall.js) -replace 'import GitHubEventsDashboard from ''\.\.\/dashboard\/GitHubEventsDashboard'';', 'import GitHubEventsDashboard from ''\.\/components\/dashboard\/GitHubEventsDashboard'';' | Set-Content scripts\postinstall.js"
+    echo [OK] Fixed component import paths.
+)
+
+REM Ensure src/components/dashboard directory exists
+if not exist src\components\dashboard (
+    mkdir src\components\dashboard
+    echo [OK] Created src\components\dashboard directory.
+)
+
+REM Copy dashboard components if they exist in the dashboard directory
+if exist dashboard\*.jsx (
+    echo Copying dashboard components to src\components\dashboard...
+    copy dashboard\*.jsx src\components\dashboard\
+    echo [OK] Dashboard components copied.
+)
+
 REM Start backend server in a new window
 echo Starting backend server...
 start "GitEvents Backend" cmd /c "cd /d "%~dp0" && color 0A && echo GitEvents Backend Server && echo. && call venv\Scripts\activate.bat && python main.py"
@@ -473,14 +473,6 @@ if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to start frontend server.
     pause
     exit /b 1
-)
-
-REM Check if browser should be opened automatically
-findstr /C:"OPEN_BROWSER=true" .env >nul 2>&1
-if %ERRORLEVEL% EQU 0 (
-    echo Opening browser...
-    timeout /t 3 /nobreak > nul
-    start http://localhost:3000
 )
 
 color 0A
