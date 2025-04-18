@@ -16,9 +16,15 @@ logger = logging.getLogger(__name__)
 class DatabaseManager:
     """Manages database operations for GitHub events"""
     
-    def __init__(self, db_path: str = "github_events.db"):
+    def __init__(self, db_path: str = "github_events.db", db_type: str = "sqlite", db_host: str = None, db_port: int = None, db_name: str = None, db_user: str = None, db_password: str = None):
         """Initialize the database manager with the path to the SQLite database or MySQL credentials"""
         self.db_path = db_path
+        self.db_type = db_type
+        self.db_host = db_host
+        self.db_port = db_port
+        self.db_name = db_name
+        self.db_user = db_user
+        self.db_password = db_password
         self.engine = None
         self.Session = None
         self._initialize_db()
@@ -26,16 +32,16 @@ class DatabaseManager:
     def _initialize_db(self) -> None:
         """Initialize the database connection and create tables if they don't exist"""
         try:
-            # Determine database type from environment
-            db_type = os.getenv("DB_TYPE", "sqlite").lower()
+            # Determine database type
+            db_type = self.db_type.lower() if self.db_type else os.getenv("DB_TYPE", "sqlite").lower()
             
             if db_type == "mysql":
                 # MySQL configuration
-                db_host = os.getenv("DB_HOST", "localhost")
-                db_port = os.getenv("DB_PORT", "3306")
-                db_name = os.getenv("DB_NAME", "github_events")
-                db_user = os.getenv("DB_USER", "root")
-                db_password = os.getenv("DB_PASSWORD", "")
+                db_host = self.db_host or os.getenv("DB_HOST", "localhost")
+                db_port = self.db_port or os.getenv("DB_PORT", "3306")
+                db_name = self.db_name or os.getenv("DB_NAME", "github_events")
+                db_user = self.db_user or os.getenv("DB_USER", "root")
+                db_password = self.db_password or os.getenv("DB_PASSWORD", "")
                 
                 # Create MySQL database URL
                 db_url = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
@@ -150,9 +156,26 @@ class DatabaseManager:
         
         return info
     
-    def test_connection(self, db_config: Dict[str, Any]) -> Dict[str, Any]:
+    def test_connection(self, db_config: Dict[str, Any] = None) -> Dict[str, Any]:
         """Test a database connection with the provided configuration"""
         try:
+            if not db_config:
+                # Test current connection
+                if not self.engine:
+                    return {
+                        "success": False,
+                        "message": "Database engine not initialized"
+                    }
+                
+                # Try to connect
+                conn = self.engine.connect()
+                conn.close()
+                
+                return {
+                    "success": True,
+                    "message": "Successfully connected to database"
+                }
+            
             db_type = db_config.get("type", "sqlite").lower()
             
             if db_type == "sqlite":
