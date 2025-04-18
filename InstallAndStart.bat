@@ -22,8 +22,7 @@ set WARNING_COUNT=0
 REM Check if Python is installed
 where python >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    color 0C
-    echo [ERROR] Python is not installed or not in PATH.
+    echo %RED%[ERROR] Python is not installed or not in PATH.%RESET%
     echo Please install Python from https://www.python.org/downloads/
     echo Make sure to check "Add Python to PATH" during installation.
     pause
@@ -39,29 +38,25 @@ for /f "tokens=1,2" %%a in ("%PYTHON_VERSION%") do (
     set PYTHON_MINOR=%%b
 )
 if %PYTHON_MAJOR% LSS 3 (
-    color 0C
-    echo [ERROR] Python version 3.6+ is required, but found version %PYTHON_MAJOR%.%PYTHON_MINOR%
+    echo %RED%[ERROR] Python version 3.6+ is required, but found version %PYTHON_MAJOR%.%PYTHON_MINOR%%RESET%
     echo Please install a newer version of Python.
     pause
     exit /b 1
 )
 if %PYTHON_MAJOR% EQU 3 (
     if %PYTHON_MINOR% LSS 6 (
-        color 0C
-        echo [ERROR] Python version 3.6+ is required, but found version %PYTHON_MAJOR%.%PYTHON_MINOR%
+        echo %RED%[ERROR] Python version 3.6+ is required, but found version %PYTHON_MAJOR%.%PYTHON_MINOR%%RESET%
         echo Please install a newer version of Python.
         pause
         exit /b 1
     )
 )
-color 0A
-echo [OK] Python %PYTHON_MAJOR%.%PYTHON_MINOR% detected.
+echo %GREEN%[OK] Python %PYTHON_MAJOR%.%PYTHON_MINOR% detected.%RESET%
 
 REM Check if Node.js is installed
 where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    color 0C
-    echo [ERROR] Node.js is not installed or not in PATH.
+    echo %RED%[ERROR] Node.js is not installed or not in PATH.%RESET%
     echo Please install Node.js from https://nodejs.org/
     pause
     exit /b 1
@@ -71,81 +66,69 @@ REM Check Node.js version
 node -v > temp_version.txt
 set /p NODE_VERSION=<temp_version.txt
 del temp_version.txt
-color 0A
-echo [OK] Node.js %NODE_VERSION% detected.
+echo %GREEN%[OK] Node.js %NODE_VERSION% detected.%RESET%
 
 REM Check if npm is installed
 where npm >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    color 0C
-    echo [ERROR] npm is not installed or not in PATH.
+    echo %RED%[ERROR] npm is not installed or not in PATH.%RESET%
     echo Please reinstall Node.js from https://nodejs.org/
     pause
     exit /b 1
 )
-color 0A
-echo [OK] npm detected.
+echo %GREEN%[OK] npm detected.%RESET%
 
 REM Check if Git is installed
 where git >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    color 0C
-    echo [ERROR] Git is not installed or not in PATH.
+    echo %RED%[ERROR] Git is not installed or not in PATH.%RESET%
     echo Please install Git from https://git-scm.com/downloads
     pause
     exit /b 1
 )
-color 0A
-echo [OK] Git detected.
+echo %GREEN%[OK] Git detected.%RESET%
 
 REM Check if we're in a git repository
 if not exist .git (
-    color 0C
-    echo [ERROR] Not in a Git repository. Please run this script from the GitEvents directory.
+    echo %RED%[ERROR] Not in a Git repository. Please run this script from the GitEvents directory.%RESET%
     pause
     exit /b 1
 )
 
 REM Check if .env file exists, if not create with interactive prompts
 if not exist .env (
-    color 0B
-    echo Creating .env file...
+    echo %CYAN%Creating .env file...%RESET%
     echo # GitEvents Environment Configuration > .env
     
     REM GitHub Configuration
     echo.
-    echo ===================================
+    echo %CYAN%===================================
     echo GitHub Configuration
-    echo ===================================
+    echo ===================================%RESET%
     
     set /p GITHUB_TOKEN=Enter your GitHub API token (or press Enter to use default): 
     if "!GITHUB_TOKEN!"=="" (
         set GITHUB_TOKEN=your_github_token_here
-        color 0E
-        echo [INFO] Using default GitHub token placeholder. You'll need to update this later.
+        echo %YELLOW%[INFO] Using default GitHub token placeholder. You'll need to update this later.%RESET%
     ) else (
-        color 0A
-        echo [OK] GitHub token set.
+        echo %GREEN%[OK] GitHub token set.%RESET%
     )
     echo GITHUB_TOKEN=!GITHUB_TOKEN! >> .env
     
     set /p GITHUB_WEBHOOK_SECRET=Enter your GitHub webhook secret (or press Enter to use default): 
     if "!GITHUB_WEBHOOK_SECRET!"=="" (
         set GITHUB_WEBHOOK_SECRET=your_webhook_secret_here
-        color 0E
-        echo [INFO] Using default webhook secret placeholder. You'll need to update this later.
+        echo %YELLOW%[INFO] Using default webhook secret placeholder. You'll need to update this later.%RESET%
     ) else (
-        color 0A
-        echo [OK] GitHub webhook secret set.
+        echo %GREEN%[OK] GitHub webhook secret set.%RESET%
     )
     echo GITHUB_WEBHOOK_SECRET=!GITHUB_WEBHOOK_SECRET! >> .env
     
     REM Database Configuration
     echo.
-    color 0B
-    echo ===================================
+    echo %CYAN%===================================
     echo Database Configuration
-    echo ===================================
+    echo ===================================%RESET%
     
     echo Select database type:
     echo 1. SQLite (default, recommended for local development)
@@ -173,23 +156,20 @@ if not exist .env (
         set /p DB_PASSWORD=Enter database password: 
         echo DB_PASSWORD=!DB_PASSWORD! >> .env
         
-        color 0A
-        echo [OK] MySQL database configuration set.
+        echo %GREEN%[OK] MySQL database configuration set.%RESET%
     ) else (
         set /p GITHUB_EVENTS_DB=Enter SQLite database path (or press Enter for github_events.db): 
         if "!GITHUB_EVENTS_DB!"=="" set GITHUB_EVENTS_DB=github_events.db
         echo GITHUB_EVENTS_DB=!GITHUB_EVENTS_DB! >> .env
         
-        color 0A
-        echo [OK] SQLite database configuration set.
+        echo %GREEN%[OK] SQLite database configuration set.%RESET%
     )
     
     REM API Configuration
     echo.
-    color 0B
-    echo ===================================
+    echo %CYAN%===================================
     echo API Configuration
-    echo ===================================
+    echo ===================================%RESET%
     
     set /p API_PORT=Enter API port (or press Enter for 8001): 
     if "!API_PORT!"=="" set API_PORT=8001
@@ -201,10 +181,9 @@ if not exist .env (
     
     REM Frontend Configuration
     echo.
-    color 0B
-    echo ===================================
+    echo %CYAN%===================================
     echo Frontend Configuration
-    echo ===================================
+    echo ===================================%RESET%
     
     set /p REACT_APP_API_URL=Enter API URL for frontend (or press Enter for http://localhost:8001/api): 
     if "!REACT_APP_API_URL!"=="" set REACT_APP_API_URL=http://localhost:8001/api
@@ -212,10 +191,9 @@ if not exist .env (
     
     REM Ngrok Configuration
     echo.
-    color 0B
-    echo ===================================
+    echo %CYAN%===================================
     echo Ngrok Configuration (Optional)
-    echo ===================================
+    echo ===================================%RESET%
     
     set /p ENABLE_NGROK=Enable Ngrok for webhook tunneling? (true/false, default: false): 
     if "!ENABLE_NGROK!"=="" set ENABLE_NGROK=false
@@ -230,35 +208,30 @@ if not exist .env (
     
     REM Windows-specific Configuration
     echo.
-    color 0B
-    echo ===================================
+    echo %CYAN%===================================
     echo Windows Configuration
-    echo ===================================
+    echo ===================================%RESET%
     
     set /p OPEN_BROWSER=Automatically open browser when starting? (true/false, default: true): 
     if "!OPEN_BROWSER!"=="" set OPEN_BROWSER=true
     echo OPEN_BROWSER=!OPEN_BROWSER! >> .env
     
-    color 0A
-    echo [OK] .env file created successfully.
+    echo %GREEN%[OK] .env file created successfully.%RESET%
     echo.
 ) else (
-    color 0E
-    echo [INFO] .env file already exists. Checking configuration...
+    echo %YELLOW%[INFO] .env file already exists. Checking configuration...%RESET%
     
     REM Check if essential variables are set in .env
     set MISSING_VARS=0
     
     findstr /C:"GITHUB_TOKEN=your_github_token_here" .env >nul 2>&1
     if %ERRORLEVEL% EQU 0 (
-        color 0E
-        echo [WARNING] GitHub token is not set in .env file.
+        echo %YELLOW%[WARNING] GitHub token is not set in .env file.%RESET%
         set /p UPDATE_TOKEN=Would you like to update it now? (Y/N): 
         if /i "!UPDATE_TOKEN!"=="Y" (
             set /p NEW_TOKEN=Enter your GitHub API token: 
             powershell -Command "(Get-Content .env) -replace 'GITHUB_TOKEN=your_github_token_here', 'GITHUB_TOKEN=!NEW_TOKEN!' | Set-Content .env"
-            color 0A
-            echo [OK] GitHub token updated.
+            echo %GREEN%[OK] GitHub token updated.%RESET%
         ) else (
             set /a WARNING_COUNT+=1
         )
@@ -266,14 +239,12 @@ if not exist .env (
     
     findstr /C:"GITHUB_WEBHOOK_SECRET=your_webhook_secret_here" .env >nul 2>&1
     if %ERRORLEVEL% EQU 0 (
-        color 0E
-        echo [WARNING] GitHub webhook secret is not set in .env file.
+        echo %YELLOW%[WARNING] GitHub webhook secret is not set in .env file.%RESET%
         set /p UPDATE_SECRET=Would you like to update it now? (Y/N): 
         if /i "!UPDATE_SECRET!"=="Y" (
             set /p NEW_SECRET=Enter your GitHub webhook secret: 
             powershell -Command "(Get-Content .env) -replace 'GITHUB_WEBHOOK_SECRET=your_webhook_secret_here', 'GITHUB_WEBHOOK_SECRET=!NEW_SECRET!' | Set-Content .env"
-            color 0A
-            echo [OK] GitHub webhook secret updated.
+            echo %GREEN%[OK] GitHub webhook secret updated.%RESET%
         ) else (
             set /a WARNING_COUNT+=1
         )
@@ -283,118 +254,187 @@ if not exist .env (
 REM Create data directory if it doesn't exist
 if not exist data (
     mkdir data
-    color 0A
-    echo [OK] Created data directory.
+    echo %GREEN%[OK] Created data directory.%RESET%
 )
 
 REM Create Python virtual environment
-color 0B
-echo Creating Python virtual environment...
+echo %CYAN%Creating Python virtual environment...%RESET%
 if exist venv (
-    color 0E
-    echo [INFO] Virtual environment already exists. Skipping creation.
+    echo %YELLOW%[INFO] Virtual environment already exists. Skipping creation.%RESET%
 ) else (
     python -m venv venv
     if %ERRORLEVEL% NEQ 0 (
-        color 0C
-        echo [ERROR] Failed to create virtual environment.
+        echo %RED%[ERROR] Failed to create virtual environment.%RESET%
         echo Please check your Python installation.
         set /a ERROR_COUNT+=1
     ) else (
-        color 0A
-        echo [OK] Virtual environment created.
+        echo %GREEN%[OK] Virtual environment created.%RESET%
     )
 )
 
 REM Activate virtual environment
-color 0B
-echo Activating virtual environment...
+echo %CYAN%Activating virtual environment...%RESET%
 call venv\Scripts\activate.bat
 if %ERRORLEVEL% NEQ 0 (
-    color 0C
-    echo [ERROR] Failed to activate virtual environment.
+    echo %RED%[ERROR] Failed to activate virtual environment.%RESET%
     set /a ERROR_COUNT+=1
 ) else (
-    color 0A
-    echo [OK] Virtual environment activated.
+    echo %GREEN%[OK] Virtual environment activated.%RESET%
 )
 
 REM Install Python dependencies with retry mechanism
-color 0B
-echo Installing Python dependencies...
+echo %CYAN%Installing Python dependencies...%RESET%
 set RETRY_COUNT=0
 :RETRY_PIP
 pip install -r requirements.txt
 if %ERRORLEVEL% NEQ 0 (
     set /a RETRY_COUNT+=1
     if %RETRY_COUNT% LSS 3 (
-        color 0E
-        echo [WARNING] Failed to install some Python dependencies. Retrying... (Attempt %RETRY_COUNT% of 3)
+        echo %YELLOW%[WARNING] Failed to install some Python dependencies. Retrying... (Attempt %RETRY_COUNT% of 3)%RESET%
         timeout /t 3 /nobreak > nul
         goto RETRY_PIP
     ) else (
-        color 0E
-        echo [WARNING] Some Python dependencies failed to install after 3 attempts.
+        echo %YELLOW%[WARNING] Some Python dependencies failed to install after 3 attempts.%RESET%
         echo The application may not function correctly.
         set /a WARNING_COUNT+=1
     )
 ) else (
-    color 0A
-    echo [OK] Python dependencies installed successfully.
+    echo %GREEN%[OK] Python dependencies installed successfully.%RESET%
+)
+
+REM Create necessary directories for React app
+echo %CYAN%Ensuring React app directories exist...%RESET%
+if not exist src (
+    mkdir src
+    echo %GREEN%[OK] Created src directory.%RESET%
+)
+
+if not exist src\components (
+    mkdir src\components
+    echo %GREEN%[OK] Created src\components directory.%RESET%
+)
+
+if not exist src\components\dashboard (
+    mkdir src\components\dashboard
+    echo %GREEN%[OK] Created src\components\dashboard directory.%RESET%
+)
+
+if not exist public (
+    mkdir public
+    echo %GREEN%[OK] Created public directory.%RESET%
+)
+
+REM Create public/index.html if it doesn't exist
+if not exist public\index.html (
+    echo %CYAN%Creating public\index.html...%RESET%
+    echo ^<!DOCTYPE html^> > public\index.html
+    echo ^<html lang="en"^> >> public\index.html
+    echo   ^<head^> >> public\index.html
+    echo     ^<meta charset="utf-8" /^> >> public\index.html
+    echo     ^<link rel="icon" href="%PUBLIC_URL%/favicon.ico" /^> >> public\index.html
+    echo     ^<meta name="viewport" content="width=device-width, initial-scale=1" /^> >> public\index.html
+    echo     ^<meta name="theme-color" content="#000000" /^> >> public\index.html
+    echo     ^<meta name="description" content="GitHub Events Dashboard" /^> >> public\index.html
+    echo     ^<title^>GitHub Events Dashboard^</title^> >> public\index.html
+    echo   ^</head^> >> public\index.html
+    echo   ^<body^> >> public\index.html
+    echo     ^<noscript^>You need to enable JavaScript to run this app.^</noscript^> >> public\index.html
+    echo     ^<div id="root"^>^</div^> >> public\index.html
+    echo   ^</body^> >> public\index.html
+    echo ^</html^> >> public\index.html
+    echo %GREEN%[OK] Created public\index.html file.%RESET%
+)
+
+REM Create src/index.js if it doesn't exist
+if not exist src\index.js (
+    echo %CYAN%Creating src\index.js...%RESET%
+    echo import React from 'react'; > src\index.js
+    echo import ReactDOM from 'react-dom/client'; >> src\index.js
+    echo import './index.css'; >> src\index.js
+    echo import GitHubEventsDashboard from './components/dashboard/GitHubEventsDashboard'; >> src\index.js
+    echo. >> src\index.js
+    echo const root = ReactDOM.createRoot(document.getElementById('root')); >> src\index.js
+    echo root.render( >> src\index.js
+    echo   ^<React.StrictMode^> >> src\index.js
+    echo     ^<GitHubEventsDashboard /^> >> src\index.js
+    echo   ^</React.StrictMode^> >> src\index.js
+    echo ); >> src\index.js
+    echo %GREEN%[OK] Created src\index.js file.%RESET%
+)
+
+REM Create src/index.css if it doesn't exist
+if not exist src\index.css (
+    echo %CYAN%Creating src\index.css...%RESET%
+    echo @tailwind base; > src\index.css
+    echo @tailwind components; >> src\index.css
+    echo @tailwind utilities; >> src\index.css
+    echo. >> src\index.css
+    echo body { >> src\index.css
+    echo   margin: 0; >> src\index.css
+    echo   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', >> src\index.css
+    echo     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', >> src\index.css
+    echo     sans-serif; >> src\index.css
+    echo   -webkit-font-smoothing: antialiased; >> src\index.css
+    echo   -moz-osx-font-smoothing: grayscale; >> src\index.css
+    echo   background-color: #f3f4f6; >> src\index.css
+    echo } >> src\index.css
+    echo. >> src\index.css
+    echo code { >> src\index.css
+    echo   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', >> src\index.css
+    echo     monospace; >> src\index.css
+    echo } >> src\index.css
+    echo %GREEN%[OK] Created src\index.css file.%RESET%
+)
+
+REM Copy dashboard components if they exist in the dashboard directory
+if exist dashboard\*.jsx (
+    echo %CYAN%Copying dashboard components to src\components\dashboard...%RESET%
+    copy dashboard\*.jsx src\components\dashboard\
+    if %ERRORLEVEL% NEQ 0 (
+        echo %RED%[ERROR] Failed to copy dashboard components.%RESET%
+        set /a ERROR_COUNT+=1
+    ) else (
+        echo %GREEN%[OK] Dashboard components copied.%RESET%
+    )
 )
 
 REM Install Node.js dependencies with retry mechanism
-color 0B
-echo Installing Node.js dependencies...
+echo %CYAN%Installing Node.js dependencies...%RESET%
 set RETRY_COUNT=0
 :RETRY_NPM
 call npm install
 if %ERRORLEVEL% NEQ 0 (
     set /a RETRY_COUNT+=1
     if %RETRY_COUNT% LSS 3 (
-        color 0E
-        echo [WARNING] Failed to install some Node.js dependencies. Retrying... (Attempt %RETRY_COUNT% of 3)
+        echo %YELLOW%[WARNING] Failed to install some Node.js dependencies. Retrying... (Attempt %RETRY_COUNT% of 3)%RESET%
         timeout /t 3 /nobreak > nul
         goto RETRY_NPM
     ) else (
-        color 0E
-        echo [WARNING] Some Node.js dependencies failed to install after 3 attempts.
+        echo %YELLOW%[WARNING] Some Node.js dependencies failed to install after 3 attempts.%RESET%
         echo The frontend may not function correctly.
         set /a WARNING_COUNT+=1
     )
 ) else (
-    color 0A
-    echo [OK] Node.js dependencies installed successfully.
+    echo %GREEN%[OK] Node.js dependencies installed successfully.%RESET%
 )
 
 REM Fix npm vulnerabilities
-color 0B
-echo Fixing npm vulnerabilities...
+echo %CYAN%Fixing npm vulnerabilities...%RESET%
 call npm audit fix --force
 if %ERRORLEVEL% NEQ 0 (
-    color 0E
-    echo [WARNING] Could not fix all npm vulnerabilities.
+    echo %YELLOW%[WARNING] Could not fix all npm vulnerabilities.%RESET%
     echo The application may have security issues.
     set /a WARNING_COUNT+=1
 ) else (
-    color 0A
-    echo [OK] npm vulnerabilities fixed.
+    echo %GREEN%[OK] npm vulnerabilities fixed.%RESET%
 )
 
-REM Ensure src/components/dashboard directory exists
-if not exist src\components\dashboard (
-    mkdir src\components\dashboard
-    color 0A
-    echo [OK] Created src\components\dashboard directory.
-)
+REM Fix the postinstall.js script to use the correct import path
+echo %CYAN%Checking and fixing React component imports...%RESET%
+if exist scripts\postinstall.js (
+    powershell -Command "(Get-Content scripts\postinstall.js) -replace 'import GitHubEventsDashboard from ''\.\.\/dashboard\/GitHubEventsDashboard'';', 'import GitHubEventsDashboard from ''\.\/components\/dashboard\/GitHubEventsDashboard'';' | Set-Content scripts\postinstall.js"
+    echo %GREEN%[OK] Fixed component import paths.%RESET%
 
-REM Copy dashboard components if they exist in the dashboard directory
-if exist dashboard\*.jsx (
-    color 0B
-    echo Copying dashboard components to src\components\dashboard...
-    copy dashboard\*.jsx src\components\dashboard\
-    color 0A
-    echo [OK] Dashboard components copied.
 )
 
 REM Check if database exists, if not create it
@@ -411,62 +451,51 @@ if "%DB_TYPE%"=="sqlite" (
     )
     
     if not exist "!DB_PATH!" (
-        color 0B
-        echo Initializing SQLite database...
+        echo %CYAN%Initializing SQLite database...%RESET%
         python -c "from db.db_manager import DatabaseManager; db = DatabaseManager('!DB_PATH!'); db.initialize_database()"
         if %ERRORLEVEL% NEQ 0 (
-            color 0C
-            echo [ERROR] Failed to initialize database.
+            echo %RED%[ERROR] Failed to initialize database.%RESET%
+            echo This could be due to missing Python modules or incorrect database configuration.
+            echo Please check your Python installation and requirements.txt file.
             set /a ERROR_COUNT+=1
         ) else (
-            color 0A
-            echo [OK] Database initialized.
+            echo %GREEN%[OK] Database initialized.%RESET%
         )
     ) else (
-        color 0E
-        echo [INFO] SQLite database already exists at !DB_PATH!
+        echo %YELLOW%[INFO] SQLite database already exists at !DB_PATH!%RESET%
         set /p REINIT_DB=Would you like to reinitialize the database? (Y/N): 
         if /i "!REINIT_DB!"=="Y" (
-            color 0B
-            echo Reinitializing SQLite database...
+            echo %CYAN%Reinitializing SQLite database...%RESET%
             python -c "from db.db_manager import DatabaseManager; db = DatabaseManager('!DB_PATH!'); db.initialize_database()"
             if %ERRORLEVEL% NEQ 0 (
-                color 0C
-                echo [ERROR] Failed to reinitialize database.
+                echo %RED%[ERROR] Failed to reinitialize database.%RESET%
                 set /a ERROR_COUNT+=1
             ) else (
-                color 0A
-                echo [OK] Database reinitialized.
+                echo %GREEN%[OK] Database reinitialized.%RESET%
             )
         )
     )
 ) else (
-    color 0B
-    echo Checking MySQL database connection...
+    echo %CYAN%Checking MySQL database connection...%RESET%
     for /f "tokens=2 delims==" %%a in ('findstr /C:"DB_HOST=" .env') do set DB_HOST=%%a
     for /f "tokens=2 delims==" %%a in ('findstr /C:"DB_PORT=" .env') do set DB_PORT=%%a
     for /f "tokens=2 delims==" %%a in ('findstr /C:"DB_NAME=" .env') do set DB_NAME=%%a
     for /f "tokens=2 delims==" %%a in ('findstr /C:"DB_USER=" .env') do set DB_USER=%%a
     for /f "tokens=2 delims==" %%a in ('findstr /C:"DB_PASSWORD=" .env') do set DB_PASSWORD=%%a
     
-    color 0B
-    echo Testing connection to MySQL database at !DB_HOST!:!DB_PORT!/!DB_NAME!...
+    echo %CYAN%Testing connection to MySQL database at !DB_HOST!:!DB_PORT!/!DB_NAME!...%RESET%
     python -c "from db.db_manager import DatabaseManager; db_config = {'type': 'mysql', 'host': '!DB_HOST!', 'port': '!DB_PORT!', 'name': '!DB_NAME!', 'user': '!DB_USER!', 'password': '!DB_PASSWORD!'}; db = DatabaseManager(); result = db.test_connection(db_config); print(result['message']); exit(0 if result['success'] else 1)"
     if %ERRORLEVEL% NEQ 0 (
-        color 0C
-        echo [ERROR] Failed to connect to MySQL database.
+        echo %RED%[ERROR] Failed to connect to MySQL database.%RESET%
         set /a ERROR_COUNT+=1
     ) else (
-        color 0B
-        echo Initializing MySQL database...
+        echo %CYAN%Initializing MySQL database...%RESET%
         python -c "from db.db_manager import DatabaseManager; db = DatabaseManager(); db.initialize_database()"
         if %ERRORLEVEL% NEQ 0 (
-            color 0C
-            echo [ERROR] Failed to initialize MySQL database.
+            echo %RED%[ERROR] Failed to initialize MySQL database.%RESET%
             set /a ERROR_COUNT+=1
         ) else (
-            color 0A
-            echo [OK] MySQL database initialized.
+            echo %GREEN%[OK] MySQL database initialized.%RESET%
         )
     )
 )
@@ -474,8 +503,7 @@ if "%DB_TYPE%"=="sqlite" (
 REM Check if there are any errors
 if %ERROR_COUNT% GTR 0 (
     echo.
-    color 0C
-    echo [CRITICAL] There were %ERROR_COUNT% errors during deployment.
+    echo %RED%[CRITICAL] There were %ERROR_COUNT% errors during deployment.%RESET%
     echo Please fix these errors before continuing.
     echo.
     pause
@@ -485,8 +513,7 @@ if %ERROR_COUNT% GTR 0 (
 REM Check if there are any warnings
 if %WARNING_COUNT% GTR 0 (
     echo.
-    color 0E
-    echo [WARNING] There were %WARNING_COUNT% warnings during deployment.
+    echo %YELLOW%[WARNING] There were %WARNING_COUNT% warnings during deployment.%RESET%
     echo The application may not function correctly.
     echo.
     choice /C YN /M "Do you want to continue anyway?"
@@ -498,28 +525,25 @@ if %WARNING_COUNT% GTR 0 (
 )
 
 REM Start backend server in a new window
-color 0B
-echo Starting backend server...
-start "GitEvents Backend" cmd /c "cd /d "%~dp0" && color 0A && echo GitEvents Backend Server && echo. && call venv\Scripts\activate.bat && python main.py && pause"
+echo %CYAN%Starting backend server...%RESET%
+start "GitEvents Backend" cmd /c "cd /d "%~dp0" && color 0A && echo GitEvents Backend Server && echo. && call venv\Scripts\activate.bat && python main.py"
+
 if %ERRORLEVEL% NEQ 0 (
-    color 0C
-    echo [ERROR] Failed to start backend server.
+    echo %RED%[ERROR] Failed to start backend server.%RESET%
     pause
     exit /b 1
 )
 
 REM Wait a moment for the backend to start
-color 0B
-echo Waiting for backend to start...
+echo %CYAN%Waiting for backend to start...%RESET%
 timeout /t 5 /nobreak > nul
 
 REM Start frontend server
-color 0B
-echo Starting frontend server...
-start "GitEvents Frontend" cmd /c "cd /d "%~dp0" && color 0B && echo GitEvents Frontend Server && echo. && npm start && pause"
+echo %CYAN%Starting frontend server...%RESET%
+start "GitEvents Frontend" cmd /c "cd /d "%~dp0" && color 0B && echo GitEvents Frontend Server && echo. && npm start"
+
 if %ERRORLEVEL% NEQ 0 (
-    color 0C
-    echo [ERROR] Failed to start frontend server.
+    echo %RED%[ERROR] Failed to start frontend server.%RESET%
     pause
     exit /b 1
 )
@@ -527,23 +551,20 @@ if %ERRORLEVEL% NEQ 0 (
 REM Check if browser should be opened automatically
 findstr /C:"OPEN_BROWSER=true" .env >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    color 0B
-    echo Opening browser...
+    echo %CYAN%Opening browser...%RESET%
     timeout /t 3 /nobreak > nul
     start http://localhost:3000
 )
 
 echo.
-echo +--------------------------------------------------+
-echo ^|  GitEvents Deployment Complete!                  ^|
-echo +--------------------------------------------------+
+echo %GREEN%╔════════════════════════════════════════════════╗%RESET%
+echo %GREEN%║  GitEvents Deployment Complete!                  ║%RESET%
+echo %GREEN%╚════════════════════════════════════════════════╝%RESET%
 
 echo.
-echo [SUCCESS] GitEvents is now running!
-color 0B
-echo Backend: http://localhost:8001
-echo Frontend: http://localhost:3000
+echo %GREEN%[SUCCESS] GitEvents is now running!%RESET%
+echo %CYAN%Backend: http://localhost:8001%RESET%
+echo %CYAN%Frontend: http://localhost:3000%RESET%
 echo.
-color 0E
-echo Press any key to close this window. The servers will continue running.
+echo %YELLOW%Press any key to close this window. The servers will continue running.%RESET%
 pause > nul
