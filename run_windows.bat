@@ -8,9 +8,9 @@ set "RED=[91m"
 set "CYAN=[96m"
 set "RESET=[0m"
 
-echo %CYAN%╔════════════════════════════════════════════╗%RESET%
+echo %CYAN%╔═══════════════════════════════════════════╗%RESET%
 echo %CYAN%║  GitEvents - Windows Launcher               ║%RESET%
-echo %CYAN%╚════════════════════════════════════════════╝%RESET%
+echo %CYAN%╚═══════════════════════════════════════════╝%RESET%
 echo.
 
 :: Check if running as administrator
@@ -296,7 +296,7 @@ if not exist src\index.js (
         echo import React from 'react';
         echo import ReactDOM from 'react-dom/client';
         echo import './index.css';
-        echo import GitHubEventsDashboard from '../dashboard/GitHubEventsDashboard';
+        echo import GitHubEventsDashboard from './components/dashboard/GitHubEventsDashboard';
         echo.
         echo const root = ReactDOM.createRoot(document.getElementById('root'^)^);
         echo root.render(

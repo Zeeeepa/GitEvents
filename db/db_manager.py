@@ -63,6 +63,28 @@ class DatabaseManager:
             logger.error(f"Error initializing database: {e}")
             raise
     
+    def initialize_database(self) -> Dict[str, Any]:
+        """Initialize the database and create all tables"""
+        try:
+            # Create tables if they don't exist
+            Base.metadata.create_all(self.engine)
+            
+            # Check if tables were created successfully
+            inspector = inspect(self.engine)
+            tables = inspector.get_table_names()
+            
+            return {
+                "success": True,
+                "message": f"Database initialized successfully with {len(tables)} tables",
+                "tables": tables
+            }
+        except Exception as e:
+            logger.error(f"Error initializing database: {e}")
+            return {
+                "success": False,
+                "message": f"Failed to initialize database: {str(e)}"
+            }
+    
     def get_session(self) -> Session:
         """Get a new database session"""
         if not self.Session:
