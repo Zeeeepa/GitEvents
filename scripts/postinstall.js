@@ -26,9 +26,9 @@ const colors = {
   white: '\x1b[37m'
 };
 
-console.log(`${colors.cyan}╔════════════════════════════════════════════╗${colors.reset}`);
-console.log(`${colors.cyan}║  GitEvents - Post-Installation Setup        ║${colors.reset}`);
-console.log(`${colors.cyan}╚════════════════════════════════════════════╝${colors.reset}`);
+console.log(`${colors.cyan}\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557${colors.reset}`);
+console.log(`${colors.cyan}\u2551  GitEvents - Post-Installation Setup        \u2551${colors.reset}`);
+console.log(`${colors.cyan}\u255a\u2550\ufffd\ufffd\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d${colors.reset}`);
 
 // Function to safely execute commands with error handling
 function safeExec(command, errorMessage) {
@@ -116,7 +116,7 @@ if (!fs.existsSync(indexPath)) {
 `import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import GitHubEventsDashboard from '../dashboard/GitHubEventsDashboard';
+import GitHubEventsDashboard from './components/dashboard/GitHubEventsDashboard';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -193,8 +193,39 @@ if (!fs.existsSync(dataDir)) {
   console.log(`${colors.green}Created data directory${colors.reset}`);
 }
 
-console.log(`\n${colors.green}✓ Post-installation setup completed successfully!${colors.reset}`);
-console.log(`${colors.cyan}╔════════════════════════════════════════════╗${colors.reset}`);
-console.log(`${colors.cyan}║  GitEvents is ready to use!                 ║${colors.reset}`);
-console.log(`${colors.cyan}║  Run 'npm start' to launch the application  ║${colors.reset}`);
-console.log(`${colors.cyan}╚════════════════════════════════════════════╝${colors.reset}`);
+// Ensure components directory structure exists
+const componentsDir = path.join(srcDir, 'components', 'dashboard');
+if (!fs.existsSync(componentsDir)) {
+  fs.mkdirSync(componentsDir, { recursive: true });
+  console.log(`${colors.green}Created src/components/dashboard directory${colors.reset}`);
+  
+  // Copy dashboard components if they exist in the dashboard directory
+  const dashboardDir = path.join(process.cwd(), 'dashboard');
+  if (fs.existsSync(dashboardDir)) {
+    try {
+      const files = fs.readdirSync(dashboardDir);
+      let copiedCount = 0;
+      
+      for (const file of files) {
+        if (file.endsWith('.jsx')) {
+          const sourcePath = path.join(dashboardDir, file);
+          const destPath = path.join(componentsDir, file);
+          fs.copyFileSync(sourcePath, destPath);
+          copiedCount++;
+        }
+      }
+      
+      if (copiedCount > 0) {
+        console.log(`${colors.green}Copied ${copiedCount} dashboard components to src/components/dashboard${colors.reset}`);
+      }
+    } catch (error) {
+      console.error(`${colors.yellow}Warning: Could not copy dashboard components: ${error.message}${colors.reset}`);
+    }
+  }
+}
+
+console.log(`\n${colors.green}\u2713 Post-installation setup completed successfully!${colors.reset}`);
+console.log(`${colors.cyan}\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557${colors.reset}`);
+console.log(`${colors.cyan}\u2551  GitEvents is ready to use!                 \u2551${colors.reset}`);
+console.log(`${colors.cyan}\u2551  Run 'npm start' to launch the application  \u2551${colors.reset}`);
+console.log(`${colors.cyan}\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d${colors.reset}`);
