@@ -46,11 +46,39 @@ def init_database():
     # Log success
     logger.info("Database initialized successfully")
 
+def start_ngrok_tunnels():
+    """Start ngrok tunnels if enabled"""
+    # Check if ngrok is enabled
+    if os.getenv("ENABLE_NGROK", "false").lower() == "true":
+        try:
+            from api.ngrok_service import ngrok_service
+            
+            # Start tunnels
+            webhook_port = int(os.getenv("WEBHOOK_PORT", 8002))
+            api_port = int(os.getenv("API_PORT", 8001))
+            
+            webhook_url = ngrok_service.start_webhook_tunnel(webhook_port)
+            api_url = ngrok_service.start_api_tunnel(api_port)
+            
+            if webhook_url:
+                logger.info(f"GitHub webhook URL (ngrok): {webhook_url}")
+                logger.info("Use this URL in your GitHub repository webhook settings")
+            
+            if api_url:
+                logger.info(f"API URL (ngrok): {api_url}")
+        except ImportError:
+            logger.error("Failed to import ngrok service. Make sure pyngrok is installed.")
+        except Exception as e:
+            logger.error(f"Failed to start ngrok tunnels: {e}")
+
 if __name__ == "__main__":
     logger.info("Starting GitHub Events application")
     
     # Initialize database
     init_database()
+    
+    # Start ngrok tunnels if enabled
+    start_ngrok_tunnels()
     
     # Start servers in separate threads
     api_thread = threading.Thread(target=start_api_server)
